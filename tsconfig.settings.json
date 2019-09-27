@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "esnext",
+        "strict": true,
+        "declaration": true,
+        "composite": true,
+        "sourceMap": true,
+        "declarationMap": true,
+        "outDir": "./dist",
+        //"baseUrl": ".",
+        /*"paths": {
+            "@hediet/typed-json-rpc": [ "./typed-json-rpc/src/index" ],
+            "@hediet/typed-json-rpc-websocket": [ "./typed-json-rpc-websocket/src/index" ],
+            "@hediet/typed-json-rpc-websocket-server": [ "./typed-json-rpc-websocket-server/src/index" ],
+        }*/
+    },
+}

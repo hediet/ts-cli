@@ -1,0 +1,5 @@
+{
+	"mochaExplorer.files": "cli-lib\\dist\\test\\*.test.js",
+	"mochaExplorer.require": "source-map-support/register",
+	"mochaExplorer.logpanel": true
+}
