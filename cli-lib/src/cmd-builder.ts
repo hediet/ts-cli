@@ -56,11 +56,12 @@ export class CmdFactory<TCmdData> {
 
 	namedArg<T>(
 		type: NamedParamType<T>,
-		options: { description?: string }
+		options: { description?: string; shortName?: string }
 	): NamedCmdArg<T> {
 		return {
 			type,
 			description: options && options.description,
+			shortName: options && options.shortName,
 		};
 	}
 }

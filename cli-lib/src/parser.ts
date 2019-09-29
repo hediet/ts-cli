@@ -1,6 +1,28 @@
-export interface ParsedCmd {
-	parts: ParsedCmdPart[];
+import { BaseError, Errors, ErrorsImpl } from "./errors";
+
+export class ParsedCmd {
+	constructor(
+		readonly parts: ParsedCmdPart[],
+		readonly errors: Errors<CmdParseError>
+	) {}
+
+	public findNamedPart(options: {
+		name?: string;
+		short?: string;
+	}): ParsedCmdNamedValue | undefined {
+		return this.parts.find(
+			(p): p is ParsedCmdNamedValue =>
+				p.kind === "NamedValue" &&
+				p.name === (p.isShort ? options.short : options.name)
+		);
+	}
 }
+
+export type CmdParseError = {
+	kind: "MalformedArgumentError";
+	argument: string;
+	message: string;
+};
 
 export type ParsedCmdPart = ParsedCmdValue | ParsedCmdNamedValue;
 
@@ -17,27 +39,30 @@ export interface ParsedCmdNamedValue {
 	value?: string;
 }
 
-interface ParserState {
+interface ParserContext {
 	onlyPositional: boolean;
+	errors: ErrorsImpl<CmdParseError>;
 }
 
 export class CmdParser {
 	public parseArgs(args: string[]): ParsedCmd {
-		const state: ParserState = { onlyPositional: false };
-		return {
-			parts: new Array<ParsedCmdPart>().concat(
+		const errors = new ErrorsImpl<CmdParseError>();
+		const state: ParserContext = { onlyPositional: false, errors };
+		return new ParsedCmd(
+			new Array<ParsedCmdPart>().concat(
 				...args.map(arg => this.parseArg(arg, state))
 			),
-		};
+			errors
+		);
 	}
 
-	private parseArg(arg: string, state: ParserState): ParsedCmdPart[] {
-		if (state.onlyPositional) {
+	private parseArg(arg: string, context: ParserContext): ParsedCmdPart[] {
+		if (context.onlyPositional) {
 			return [{ kind: "Value", value: arg }];
 		}
 
 		if (arg == "--") {
-			state.onlyPositional = true;
+			context.onlyPositional = true;
 			return [];
 		}
 
@@ -80,7 +105,12 @@ export class CmdParser {
 				},
 			];
 		} else {
-			throw new Error("TODO");
+			context.errors.addError({
+				kind: "MalformedArgumentError",
+				argument: arg,
+				message: `Argument "${arg}" is malformed. Use "--IDENTIFIER" to specify a named argument.`,
+			});
+			return [];
 		}
 	}
 }

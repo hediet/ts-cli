@@ -1,13 +1,14 @@
-import { ParsedCmd, ParsedCmdNamedValue } from "./parser";
+import { ParsedCmd } from "./parser";
+import { ErrorsImpl, Errors } from "./errors";
 
 export interface CmdAssemblerOptions {
 	namedArgs: Record<string, NamedArg>;
 }
 
-export type NamedArgMode = "NoValue" | "SingleValue" | "MultiValue";
+export type NamedArgKind = "NoValue" | "SingleValue" | "MultiValue";
 
 export interface NamedArg {
-	mode: NamedArgMode;
+	kind: NamedArgKind;
 	shortName?: string;
 }
 
@@ -37,10 +38,16 @@ export class CmdAssembler {
 	public process(parsedCmd: ParsedCmd): AssembledCmd {
 		const namedArgs: Record<string, AssembledCmdArg> = {};
 		const positionalArgs = new Array<AssembledCmdValue>();
+		const errors = new ErrorsImpl<CmdAssembleError>();
 
 		function setArg(arg: NamedArg2, values: string[]) {
 			if (namedArgs[arg.name]) {
-				throw new Error("arg redefined");
+				errors.addError({
+					kind: "DuplicateArgument",
+					argName: arg.name,
+					message: `A value for argument "${arg.name}" has already been specified.`,
+				});
+				return;
 			}
 
 			namedArgs[arg.name] = {
@@ -61,10 +68,15 @@ export class CmdAssembler {
 					? this.namedShortArgs
 					: this.namedArgs)[part.name];
 				if (!argInfo) {
-					throw new Error(`Unknown arg ${part.name}`);
+					errors.addError({
+						kind: "UnknownArgument",
+						argName: part.name,
+						message: `Did not expect an argument with name "${part.name}".`,
+					});
+					continue;
 				}
 
-				switch (argInfo.mode) {
+				switch (argInfo.kind) {
 					case "MultiValue":
 						const values = new Array<string>();
 						while (queue[0] && queue[0].kind === "Value") {
@@ -83,7 +95,12 @@ export class CmdAssembler {
 							}
 						}
 						if (!value) {
-							throw new Error("No value given");
+							errors.addError({
+								kind: "MissingValue",
+								argName: part.name,
+								message: `A value is missing for argument "${part.name}".`,
+							});
+							continue;
 						}
 						setArg(argInfo, [value]);
 						break;
@@ -92,7 +109,7 @@ export class CmdAssembler {
 						setArg(argInfo, []);
 						break;
 					default:
-						const x: never = argInfo.mode;
+						const x: never = argInfo.kind;
 				}
 			} else {
 				positionalArgs.push({ kind: "Value", value: part.value });
@@ -102,6 +119,7 @@ export class CmdAssembler {
 		return {
 			namedArgs,
 			positionalArgs,
+			errors,
 		};
 	}
 }
@@ -109,7 +127,25 @@ export class CmdAssembler {
 export interface AssembledCmd {
 	positionalArgs: AssembledCmdValue[];
 	namedArgs: Record<string, AssembledCmdArg>;
+	errors: Errors<CmdAssembleError>;
 }
+
+export type CmdAssembleError =
+	| {
+			kind: "UnknownArgument";
+			argName: string;
+			message: string;
+	  }
+	| {
+			kind: "DuplicateArgument";
+			argName: string;
+			message: string;
+	  }
+	| {
+			kind: "MissingValue";
+			argName: string;
+			message: string;
+	  };
 
 export type AssembledCmdPart = AssembledCmdValue | AssembledCmdArg;
 

@@ -1,5 +1,6 @@
 {
-	"name": "@hediet/cli-lib",
+	"name": "demo",
+	"private": true,
 	"description": "",
 	"version": "0.1.0",
 	"author": {
