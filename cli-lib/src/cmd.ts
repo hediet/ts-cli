@@ -31,7 +31,10 @@ export class Cmd<TCmdData> {
 	constructor(
 		public readonly description: string | undefined,
 		public readonly positionalArgs: PositionalCmdArg[],
-		public readonly namedArgs: Record<string, NamedCmdArg>,
+		public readonly namedArgs: Record<
+			string,
+			NamedCmdArg & { name: string }
+		>,
 		private readonly dataBuilder: (
 			args: Record<string, unknown>
 		) => TCmdData

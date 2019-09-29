@@ -37,7 +37,14 @@ export class CmdFactory<TCmdData> {
 		return new Cmd(
 			options.description,
 			options.positionalArgs || [],
-			options.namedArgs || {},
+			options.namedArgs
+				? Object.fromEntries(
+						Object.entries(options.namedArgs).map(([key, val]) => [
+							key,
+							Object.assign({}, val, { name: key }),
+						])
+				  )
+				: {},
 			dataBuilder as any
 		);
 	}

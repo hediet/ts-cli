@@ -23,10 +23,10 @@ export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
 	console.log();
 
 	console.log("Required Parameters");
-	for (const [key, arg] of Object.entries(cmd.namedArgs)) {
+	for (const arg of Object.values(cmd.namedArgs)) {
 		const short = arg.shortName !== undefined ? `-${arg.shortName}, ` : "";
 		const val =
 			arg.type.getRealType().kind === "NoValue" ? "" : `={${arg.type}}`;
-		console.log(`      ${short}--${key}${val}    ${arg.description}`);
+		console.log(`      ${short}--${arg.name}${val}    ${arg.description}`);
 	}
 }

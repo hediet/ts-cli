@@ -12,6 +12,30 @@ type TypeWithDefaultValueHelper<T, TType extends ParamType<T>> =
 	| TType
 	| TypeWithDefaultValue<T, TType>;
 
+export abstract class ParamType<T> {
+	public get T(): T {
+		throw new Error();
+	}
+
+	public withDefaultValue<TDefault>(
+		defaultValue: TDefault
+	): TypeWithDefaultValue<T | TDefault, this> {
+		return new TypeWithDefaultValue<T | TDefault, this>(this, defaultValue);
+	}
+
+	abstract parseStrings(values: string[]): T;
+
+	abstract toString(): string;
+
+	public getRealType(): this {
+		return this;
+	}
+
+	public itemToString(): string {
+		return this.toString();
+	}
+}
+
 export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
 	public readonly kind = "TypeWithDefaultValue";
 
@@ -27,24 +51,6 @@ export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
 
 	toString() {
 		return this.type.toString();
-	}
-}
-
-export abstract class ParamType<T> {
-	public get T(): T {
-		throw new Error();
-	}
-
-	public withDefaultValue<TDefault>(
-		defaultValue: TDefault
-	): TypeWithDefaultValue<T | TDefault, this> {
-		return new TypeWithDefaultValue<T | TDefault, this>(this, defaultValue);
-	}
-
-	abstract parseStrings(values: string[]): T;
-
-	public getRealType(): this {
-		return this;
 	}
 }
 
@@ -140,6 +146,10 @@ export class ArrayType<TItem> extends MultiValueParamType<TItem[]> {
 
 	toString() {
 		return `${this.itemType.toString()}[]`;
+	}
+
+	itemToString() {
+		return this.itemType.toString();
 	}
 }
 
