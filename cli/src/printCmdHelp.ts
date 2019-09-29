@@ -1,4 +1,4 @@
-import { Cmd } from "@hediet/cli-lib";
+import { Cmd, NamedCmdArg } from "@hediet/cli-lib";
 
 export interface HelpInfo {
 	cmdName: string | undefined;
@@ -6,24 +6,33 @@ export interface HelpInfo {
 }
 
 export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
-	/*console.log(
-		`Syntax: ${info.appName} ${info.cmdName} ${cmd.positionalArgs
-			.map(arg => `{${arg.name}: ${arg.type.toString()}}`)
+	console.log(
+		`usage: ${info.appName} ${info.cmdName} ${cmd.positionalArgs
+			.map(arg => `{${arg.name}: ${arg.type.itemToString()}}`)
 			.join(" ")}`
 	);
 
-*/
-	console.log("usage: app print --count={int} {count: int} {files: string}*");
+	console.log("usage: app print --count={int} {count:int} {files:string}*");
 	console.log("");
 	console.log(`      ${cmd.description}`);
 	console.log("");
 	console.log("Positional Parameters");
-	console.log("      count: int       The count    ");
-	console.log("      files: string[]  The files to print  ");
+	for (const arg of cmd.positionalArgs) {
+		console.log(
+			`      ${arg.name}: ${arg.type.toString()}    ${arg.description}`
+		);
+	}
 	console.log();
 
 	console.log("Required Parameters");
-	for (const arg of Object.values(cmd.namedArgs)) {
+	printParameters(Object.values(cmd.namedArgs).filter(v => !v.isOptional));
+	console.log();
+	console.log("Optional Parameters");
+	printParameters(Object.values(cmd.namedArgs).filter(v => v.isOptional));
+}
+
+function printParameters(params: NamedCmdArg<any>[]): void {
+	for (const arg of Object.values(params)) {
 		const short = arg.shortName !== undefined ? `-${arg.shortName}, ` : "";
 		const val =
 			arg.type.getRealType().kind === "NoValue" ? "" : `={${arg.type}}`;

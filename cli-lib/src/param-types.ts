@@ -52,6 +52,10 @@ export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
 	toString() {
 		return this.type.toString();
 	}
+
+	public itemToString(): string {
+		return this.type.itemToString();
+	}
 }
 
 export abstract class NoValueParamType<T> extends ParamType<T> {

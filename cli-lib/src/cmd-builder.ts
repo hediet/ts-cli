@@ -1,7 +1,15 @@
 import { NamedParamType, PositionalParamType } from "./param-types";
 import { Cmd, NamedCmdArg, PositionalCmdArg } from "./cmd";
 
-export type NamedArgsToTypes<TArgs extends Record<string, NamedCmdArg<any>>> = {
+export interface NamedCmdArgOptions<T = unknown> {
+	type: NamedParamType<T>;
+	description?: string;
+	shortName?: string;
+}
+
+export type NamedArgsToTypes<
+	TArgs extends Record<string, NamedCmdArgOptions>
+> = {
 	[TKey in keyof TArgs]: TArgs[TKey]["type"]["T"];
 };
 
@@ -21,7 +29,7 @@ export type PositionalArgsToTypes<TArgs extends PositionalCmdArg[]> = Merge<
 
 export class CmdFactory<TCmdData> {
 	cmd<
-		TNamedArgs extends Record<string, NamedCmdArg<any>> = {},
+		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
 		TPositionalArgs extends PositionalCmdArg[] = []
 	>(
 		options: {
@@ -41,7 +49,12 @@ export class CmdFactory<TCmdData> {
 				? Object.fromEntries(
 						Object.entries(options.namedArgs).map(([key, val]) => [
 							key,
-							Object.assign({}, val, { name: key }),
+							new NamedCmdArg(
+								key,
+								val.type,
+								val.description,
+								val.shortName
+							),
 						])
 				  )
 				: {},
@@ -64,7 +77,7 @@ export class CmdFactory<TCmdData> {
 	namedArg<T>(
 		type: NamedParamType<T>,
 		options: { description?: string; shortName?: string }
-	): NamedCmdArg<T> {
+	): NamedCmdArgOptions<T> {
 		return {
 			type,
 			description: options && options.description,

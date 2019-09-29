@@ -9,10 +9,17 @@ export interface PositionalCmdArg<TName extends string = string, T = unknown> {
 	type: PositionalParamType<T>;
 }
 
-export interface NamedCmdArg<T = unknown> {
-	type: NamedParamType<T>;
-	description?: string;
-	shortName?: string;
+export class NamedCmdArg<T = unknown> {
+	constructor(
+		public readonly name: string,
+		public readonly type: NamedParamType<T>,
+		public readonly description?: string,
+		public readonly shortName?: string
+	) {}
+
+	get isOptional(): boolean {
+		return this.type.kind === "TypeWithDefaultValue";
+	}
 }
 
 export type CmdInterpretError =
@@ -31,10 +38,7 @@ export class Cmd<TCmdData> {
 	constructor(
 		public readonly description: string | undefined,
 		public readonly positionalArgs: PositionalCmdArg[],
-		public readonly namedArgs: Record<
-			string,
-			NamedCmdArg & { name: string }
-		>,
+		public readonly namedArgs: Record<string, NamedCmdArg>,
 		private readonly dataBuilder: (
 			args: Record<string, unknown>
 		) => TCmdData
