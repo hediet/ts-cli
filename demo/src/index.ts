@@ -11,6 +11,7 @@ interface CmdData {
 }
 
 const cli = new ExtendedCli<CmdData>({
+	sharedNamedArgs: f => ({ foo: f.namedArg(types.string, {}) }),
 	subCmds: {
 		print: f =>
 			f.cmd(
@@ -34,6 +35,7 @@ const cli = new ExtendedCli<CmdData>({
 				args => ({
 					async run() {
 						console.log("print:");
+						//args.
 						for (const f of args.files) {
 							if (args.onlyFileNames) {
 								console.log(f);
@@ -52,3 +54,28 @@ runExtendedCli({
 	cli,
 	dataHandler: data => data.run(),
 });
+
+const cli2 = new ExtendedCli2<CmdData>()
+	.addGlobalNamedArg("version", types.string, {})
+	.addCmd({
+		name: "print",
+		description: "Prints selected files.",
+		positionalArgs: {
+			foo: {
+				name: "files",
+				type: types.arrayOf(types.string),
+				description: "The files to print.",
+			},
+		},
+	})
+	.addCmd({
+		name: "print",
+		description: "Prints selected files.",
+		positionalArgs: {
+			foo: {
+				name: "files",
+				type: types.arrayOf(types.string),
+				description: "The files to print.",
+			},
+		},
+	});

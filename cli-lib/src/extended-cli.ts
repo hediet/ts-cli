@@ -1,8 +1,10 @@
-import { Cli, CmdCliError } from "./cli";
+import { Cli, CmdCliError, CliOptions } from "./cli";
 import { ParsedCmd, CmdParseError } from "./parser";
-import { Cmd, CmdInterpretError } from "./cmd";
+import { Cmd, CmdInterpretError, NamedCmdArg } from "./cmd";
 import { Errors } from "./errors";
 import { CmdAssembleError } from "./assembler";
+import { types } from "./param-types";
+import { NamedCmdArgOptions } from "./cmd-builder";
 
 export type ExtendedData<TData> =
 	| TData
@@ -22,7 +24,36 @@ export type ExtendedData<TData> =
 	| { isExtendedCmd: true; kind: "guiCmd" }
 	| { isExtendedCmd: true; kind: "schemaCmd" };
 
-export class ExtendedCli<TData> extends Cli<ExtendedData<TData>> {
+export class ExtendedCli<
+	TData,
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+> extends Cli<ExtendedData<TData>, TSharedNamedArgs> {
+	constructor(options: CliOptions<ExtendedData<TData>, TSharedNamedArgs>) {
+		super(options);
+
+		function prepareCmd(cmd: Cmd<any>) {
+			cmd.namedArgs.help = new NamedCmdArg(
+				"help",
+				types.booleanFlag,
+				"Shows the help.",
+				"h"
+			);
+			cmd.namedArgs.version = new NamedCmdArg(
+				"version",
+				types.booleanFlag,
+				"Shows the version.",
+				"v"
+			);
+		}
+
+		if (this.mainCmd) {
+			prepareCmd(this.mainCmd);
+		}
+		for (const cmd of Object.values(this.subCmds)) {
+			prepareCmd(cmd);
+		}
+	}
+
 	public parse(
 		argv: string[]
 	):

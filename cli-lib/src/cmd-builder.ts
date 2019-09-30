@@ -28,7 +28,25 @@ export type PositionalArgsToTypes<TArgs extends PositionalCmdArg[]> = Merge<
 	}
 >;
 
-export class CmdFactory<TCmdData> {
+function namedArgCtor<T>(
+	type: NamedParamType<T>,
+	options: { description?: string; shortName?: string }
+): NamedCmdArgOptions<T> {
+	return {
+		type,
+		description: options && options.description,
+		shortName: options && options.shortName,
+	};
+}
+
+export class NamedArgFactory {
+	public readonly namedArg = namedArgCtor;
+}
+
+export class CmdFactory<
+	TCmdData,
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+> {
 	cmd<
 		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
 		TPositionalArgs extends PositionalCmdArg[] = []
@@ -40,7 +58,8 @@ export class CmdFactory<TCmdData> {
 		},
 		dataBuilder: (
 			args: NamedArgsToTypes<TNamedArgs> &
-				PositionalArgsToTypes<TPositionalArgs>
+				PositionalArgsToTypes<TPositionalArgs> &
+				NamedArgsToTypes<TSharedNamedArgs>
 		) => TCmdData
 	): Cmd<TCmdData> {
 		return new Cmd(
@@ -62,6 +81,8 @@ export class CmdFactory<TCmdData> {
 		);
 	}
 
+	public readonly namedArg = namedArgCtor;
+
 	positionalArg<TName extends string, T>(
 		name: TName,
 		type: PositionalParamType<T>,
@@ -71,17 +92,6 @@ export class CmdFactory<TCmdData> {
 			name,
 			type,
 			description: options && options.description,
-		};
-	}
-
-	namedArg<T>(
-		type: NamedParamType<T>,
-		options: { description?: string; shortName?: string }
-	): NamedCmdArgOptions<T> {
-		return {
-			type,
-			description: options && options.description,
-			shortName: options && options.shortName,
 		};
 	}
 }

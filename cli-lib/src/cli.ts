@@ -1,25 +1,35 @@
-import { CmdFactory } from "./cmd-builder";
+import { CmdFactory, NamedCmdArgOptions, NamedArgFactory } from "./cmd-builder";
 import { Cmd, CmdInterpretError } from "./cmd";
 import { CmdParser, ParsedCmd, CmdParseError } from "./parser";
 import { Errors, ErrorsImpl } from "./errors";
 import { CmdAssembleError } from "./assembler";
 import { mapObject } from "./utils";
 
-export type CmdDescription<TCommand> = (
-	cmdFactory: CmdFactory<TCommand>
-) => Cmd<TCommand>;
+export type CmdDescription<
+	TCommand,
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+> = (cmdFactory: CmdFactory<TCommand, TSharedNamedArgs>) => Cmd<TCommand>;
 
-export type CliOptions<TCmdData> = {
-	mainCmd?: CmdDescription<TCmdData>;
-	subCmds?: Record<string, CmdDescription<TCmdData>>;
+export type CliOptions<
+	TCmdData,
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+> = {
+	sharedNamedArgs?: (f: NamedArgFactory) => TSharedNamedArgs;
+	mainCmd?: CmdDescription<TCmdData, TSharedNamedArgs>;
+	subCmds?: Record<string, CmdDescription<TCmdData, TSharedNamedArgs>>;
 };
 
-export class Cli<TCmdData> {
+export type CliCmd<TCmdData> = { name: string | undefined } & Cmd<TCmdData>;
+
+export class Cli<
+	TCmdData,
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+> {
 	public readonly mainCmd: Cmd<TCmdData> | undefined;
 	public readonly subCmds: Record<string, Cmd<TCmdData>>;
 
-	constructor(options: CliOptions<TCmdData>) {
-		const factory = new CmdFactory<TCmdData>();
+	constructor(options: CliOptions<TCmdData, TSharedNamedArgs>) {
+		const factory = new CmdFactory<TCmdData, TSharedNamedArgs>();
 		this.mainCmd = options.mainCmd && options.mainCmd(factory);
 		this.subCmds = mapObject(options.subCmds || {}, val => val(factory));
 	}
