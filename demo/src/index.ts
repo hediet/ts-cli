@@ -1,4 +1,10 @@
-import { ExtendedCli, types, runExtendedCli } from "@hediet/cli";
+import {
+	ExtendedCli,
+	types,
+	runExtendedCli,
+	cliInfoFromPackageJson,
+} from "@hediet/cli";
+import { join } from "path";
 
 interface CmdData {
 	run(): Promise<void>;
@@ -41,4 +47,8 @@ const cli = new ExtendedCli<CmdData>({
 	},
 });
 
-runExtendedCli({ cli, dataHandler: data => data.run() });
+runExtendedCli({
+	info: cliInfoFromPackageJson(join(__dirname, "../package.json")),
+	cli,
+	dataHandler: data => data.run(),
+});

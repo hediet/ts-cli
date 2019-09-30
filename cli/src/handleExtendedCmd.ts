@@ -2,8 +2,14 @@ import { ExtendedCli } from "@hediet/cli-lib";
 import { printCmdHelp } from "./printCmdHelp";
 import { printCliHelp } from "./printCliHelp";
 
+export interface CliInfo {
+	appName: string;
+	version: string;
+}
+
 export function runExtendedCli<TData>(options: {
 	cli: ExtendedCli<TData>;
+	info: CliInfo;
 	dataHandler: (data: TData) => Promise<void>;
 	args?: string[];
 }) {
@@ -16,7 +22,7 @@ export function runExtendedCli<TData>(options: {
 	if ("isExtendedCmd" in data) {
 		switch (data.kind) {
 			case "versionCmd":
-				console.log("show version");
+				console.log(`version: ${options.info.version}`);
 				return;
 			case "guiCmd":
 				console.log("show gui");
@@ -30,11 +36,14 @@ export function runExtendedCli<TData>(options: {
 				console.log();
 				if (data.cmd) {
 					printCmdHelp(
-						{ cmdName: data.cmdName, appName: "app" },
+						{
+							cmdName: data.cmdName,
+							appName: options.info.appName,
+						},
 						data.cmd
 					);
 				} else {
-					printCliHelp(options.cli);
+					printCliHelp(options.cli, options.info);
 				}
 
 				return;
