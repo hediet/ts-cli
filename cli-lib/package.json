@@ -1,6 +1,6 @@
 {
 	"name": "@hediet/cli-lib",
-	"description": "",
+	"description": "A CLI library for TypeScript.",
 	"version": "0.1.0",
 	"author": {
 		"name": "Henning Dieterichs",
