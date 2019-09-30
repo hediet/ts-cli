@@ -1,18 +1,30 @@
-import { Cmd, NamedCmdArg } from "@hediet/cli-lib";
+import { Cmd, NamedCmdArg, ParamType, NamedParamType } from "@hediet/cli-lib";
 
 export interface HelpInfo {
 	cmdName: string | undefined;
 	appName: string;
 }
 
-export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
-	console.log(
-		`usage: ${info.appName} ${info.cmdName} ${cmd.positionalArgs
-			.map(arg => `{${arg.name}: ${arg.type.itemToString()}}`)
-			.join(" ")}`
-	);
+export function getUsage(cmdName: string | undefined, cmd: Cmd<any>): string {
+	return `${cmdName} ${cmd.positionalArgs
+		.map(
+			arg =>
+				`{${arg.name}:${arg.type.itemToString()}}${starIfMultiple(
+					arg.type
+				)}`
+		)
+		.join(" ")} ${Object.values(cmd.namedArgs)
+		.filter(v => !v.isOptional)
+		.map(
+			v =>
+				`--${v.name}={${v.type.itemToString()}}${starIfMultiple(
+					v.type
+				)}`
+		)}`;
+}
 
-	console.log("usage: app print --count={int} {count:int} {files:string}*");
+export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
+	console.log(`usage: ${info.appName} ${getUsage(info.cmdName, cmd)}`);
 	console.log("");
 	console.log(`      ${cmd.description}`);
 	console.log("");
@@ -31,11 +43,20 @@ export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
 	printParameters(Object.values(cmd.namedArgs).filter(v => v.isOptional));
 }
 
+function starIfMultiple(type: NamedParamType<any>): string {
+	if (type.getRealType().kind === "MultiValue") {
+		return "*";
+	}
+	return "";
+}
+
 function printParameters(params: NamedCmdArg<any>[]): void {
 	for (const arg of Object.values(params)) {
 		const short = arg.shortName !== undefined ? `-${arg.shortName}, ` : "";
 		const val =
-			arg.type.getRealType().kind === "NoValue" ? "" : `={${arg.type}}`;
+			arg.type.getRealType().kind === "NoValue"
+				? ""
+				: `={${arg.type.itemToString()}}${starIfMultiple(arg.type)}`;
 		console.log(`      ${short}--${arg.name}${val}    ${arg.description}`);
 	}
 }

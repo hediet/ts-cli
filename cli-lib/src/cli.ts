@@ -3,6 +3,7 @@ import { Cmd, CmdInterpretError } from "./cmd";
 import { CmdParser, ParsedCmd, CmdParseError } from "./parser";
 import { Errors, ErrorsImpl } from "./errors";
 import { CmdAssembleError } from "./assembler";
+import { mapObject } from "./utils";
 
 export type CmdDescription<TCommand> = (
 	cmdFactory: CmdFactory<TCommand>
@@ -20,12 +21,7 @@ export class Cli<TCmdData> {
 	constructor(options: CliOptions<TCmdData>) {
 		const factory = new CmdFactory<TCmdData>();
 		this.mainCmd = options.mainCmd && options.mainCmd(factory);
-		this.subCmds = Object.fromEntries(
-			Object.entries(options.subCmds || {}).map(([key, val]) => [
-				key,
-				val(factory),
-			])
-		);
+		this.subCmds = mapObject(options.subCmds || {}, val => val(factory));
 	}
 
 	public parse(

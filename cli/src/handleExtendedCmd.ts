@@ -1,5 +1,6 @@
 import { ExtendedCli } from "@hediet/cli-lib";
 import { printCmdHelp } from "./printCmdHelp";
+import { printCliHelp } from "./printCliHelp";
 
 export function runExtendedCli<TData>(options: {
 	cli: ExtendedCli<TData>;
@@ -26,11 +27,14 @@ export function runExtendedCli<TData>(options: {
 						console.error(e.message);
 					}
 				}
+				console.log();
 				if (data.cmd) {
 					printCmdHelp(
 						{ cmdName: data.cmdName, appName: "app" },
 						data.cmd
 					);
+				} else {
+					printCliHelp(options.cli);
 				}
 
 				return;

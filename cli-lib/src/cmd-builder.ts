@@ -1,5 +1,6 @@
 import { NamedParamType, PositionalParamType } from "./param-types";
 import { Cmd, NamedCmdArg, PositionalCmdArg } from "./cmd";
+import { mapObject } from "./utils";
 
 export interface NamedCmdArgOptions<T = unknown> {
 	type: NamedParamType<T>;
@@ -46,16 +47,15 @@ export class CmdFactory<TCmdData> {
 			options.description,
 			options.positionalArgs || [],
 			options.namedArgs
-				? Object.fromEntries(
-						Object.entries(options.namedArgs).map(([key, val]) => [
-							key,
+				? mapObject(
+						options.namedArgs,
+						(val, key) =>
 							new NamedCmdArg(
 								key,
 								val.type,
 								val.description,
 								val.shortName
-							),
-						])
+							)
 				  )
 				: {},
 			dataBuilder as any

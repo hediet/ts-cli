@@ -2,6 +2,7 @@ import { PositionalParamType, NamedParamType } from "./param-types";
 import { ParsedCmd } from "./parser";
 import { CmdAssembler, NamedArg, CmdAssembleError } from "./assembler";
 import { Errors, ErrorsImpl } from "./errors";
+import { mapObject } from "./utils";
 
 export interface PositionalCmdArg<TName extends string = string, T = unknown> {
 	name: TName;
@@ -65,19 +66,18 @@ export class Cmd<TCmdData> {
 		values: Record<string, unknown>;
 		errors: Errors<CmdAssembleError | CmdInterpretError>;
 	} {
-		const namedArgs = Object.fromEntries(
-			Object.entries(this.namedArgs).map<[string, NamedArg]>(
-				([key, val]) => [
-					key,
-					{
-						kind:
-							val.type.kind === "TypeWithDefaultValue"
-								? val.type.type.kind
-								: val.type.kind,
-						shortName: val.shortName,
-					},
-				]
-			)
+		function expectType<T>(item: T) {
+			return item;
+		}
+
+		const namedArgs = mapObject(this.namedArgs, val =>
+			expectType<NamedArg>({
+				kind:
+					val.type.kind === "TypeWithDefaultValue"
+						? val.type.type.kind
+						: val.type.kind,
+				shortName: val.shortName,
+			})
 		);
 
 		const assembler = new CmdAssembler({
