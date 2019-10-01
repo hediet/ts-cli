@@ -1,6 +1,5 @@
 import { NamedParamType, PositionalParamType } from "./param-types";
-import { Cmd, NamedCmdArg, PositionalCmdArg } from "./cmd";
-import { mapObject } from "./utils";
+import { PositionalCmdArg } from "./cmd";
 
 export interface NamedCmdArgOptions<T = unknown> {
 	type: NamedParamType<T>;
@@ -28,7 +27,7 @@ export type PositionalArgsToTypes<TArgs extends PositionalCmdArg[]> = Merge<
 	}
 >;
 
-function namedArgCtor<T>(
+export function namedArg<T>(
 	type: NamedParamType<T>,
 	options: { description?: string; shortName?: string }
 ): NamedCmdArgOptions<T> {
@@ -39,59 +38,14 @@ function namedArgCtor<T>(
 	};
 }
 
-export class NamedArgFactory {
-	public readonly namedArg = namedArgCtor;
-}
-
-export class CmdFactory<
-	TCmdData,
-	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
-> {
-	cmd<
-		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
-		TPositionalArgs extends PositionalCmdArg[] = []
-	>(
-		options: {
-			description?: string;
-			positionalArgs?: TPositionalArgs;
-			namedArgs?: TNamedArgs;
-		},
-		dataBuilder: (
-			args: NamedArgsToTypes<TNamedArgs> &
-				PositionalArgsToTypes<TPositionalArgs> &
-				NamedArgsToTypes<TSharedNamedArgs>
-		) => TCmdData
-	): Cmd<TCmdData> {
-		return new Cmd(
-			options.description,
-			options.positionalArgs || [],
-			options.namedArgs
-				? mapObject(
-						options.namedArgs,
-						(val, key) =>
-							new NamedCmdArg(
-								key,
-								val.type,
-								val.description,
-								val.shortName
-							)
-				  )
-				: {},
-			dataBuilder as any
-		);
-	}
-
-	public readonly namedArg = namedArgCtor;
-
-	positionalArg<TName extends string, T>(
-		name: TName,
-		type: PositionalParamType<T>,
-		options?: { description?: string }
-	): PositionalCmdArg<TName, T> {
-		return {
-			name,
-			type,
-			description: options && options.description,
-		};
-	}
+export function positionalArg<TName extends string, T>(
+	name: TName,
+	type: PositionalParamType<T>,
+	options?: { description?: string }
+): PositionalCmdArg<TName, T> {
+	return {
+		name,
+		type,
+		description: options && options.description,
+	};
 }

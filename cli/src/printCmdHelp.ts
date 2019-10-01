@@ -5,8 +5,8 @@ export interface HelpInfo {
 	appName: string;
 }
 
-export function getUsage(cmdName: string | undefined, cmd: Cmd<any>): string {
-	return `${cmdName} ${cmd.positionalArgs
+export function getUsage(cmd: Cmd<any>): string {
+	return `${cmd.name} ${cmd.positionalArgs
 		.map(
 			arg =>
 				`{${arg.name}:${arg.type.itemToString()}}${starIfMultiple(
@@ -24,7 +24,7 @@ export function getUsage(cmdName: string | undefined, cmd: Cmd<any>): string {
 }
 
 export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
-	console.log(`usage: ${info.appName} ${getUsage(info.cmdName, cmd)}`);
+	console.log(`usage: ${info.appName} ${getUsage(cmd)}`);
 	console.log("");
 	console.log(`      ${cmd.description}`);
 	console.log("");

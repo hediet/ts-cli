@@ -7,7 +7,7 @@ export function printCliHelp(cli: Cli<any>, info: CliInfo): void {
 	console.log("");
 
 	console.log("Available Commands");
-	for (const [cmdName, cmd] of Object.entries(cli.subCmds)) {
-		console.log(`   ${getUsage(cmdName, cmd)}  ${cmd.description}`);
+	for (const cmd of cli.cmds) {
+		console.log(`   ${getUsage(cmd)}  ${cmd.description}`);
 	}
 }

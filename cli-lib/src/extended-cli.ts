@@ -1,17 +1,16 @@
-import { Cli, CmdCliError, CliOptions } from "./cli";
+import { Cli, CmdCliError } from "./cli";
 import { ParsedCmd, CmdParseError } from "./parser";
-import { Cmd, CmdInterpretError, NamedCmdArg } from "./cmd";
+import { Cmd, CmdInterpretError } from "./cmd";
 import { Errors } from "./errors";
 import { CmdAssembleError } from "./assembler";
 import { types } from "./param-types";
-import { NamedCmdArgOptions } from "./cmd-builder";
+import { NamedCmdArgOptions, namedArg } from "./cmd-builder";
 
 export type ExtendedData<TData> =
 	| TData
 	| {
 			isExtendedCmd: true;
 			kind: "helpCmd";
-			cmdName?: string;
 			cmd?: Cmd<any>;
 			errors?: Errors<
 				| CmdParseError
@@ -26,32 +25,21 @@ export type ExtendedData<TData> =
 
 export class ExtendedCli<
 	TData,
-	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+	TSharedNamedArgs extends Record<string, NamedCmdArgOptions> = {}
 > extends Cli<ExtendedData<TData>, TSharedNamedArgs> {
-	constructor(options: CliOptions<ExtendedData<TData>, TSharedNamedArgs>) {
-		super(options);
+	constructor() {
+		super();
 
-		function prepareCmd(cmd: Cmd<any>) {
-			cmd.namedArgs.help = new NamedCmdArg(
-				"help",
-				types.booleanFlag,
-				"Shows the help.",
-				"h"
-			);
-			cmd.namedArgs.version = new NamedCmdArg(
-				"version",
-				types.booleanFlag,
-				"Shows the version.",
-				"v"
-			);
-		}
-
-		if (this.mainCmd) {
-			prepareCmd(this.mainCmd);
-		}
-		for (const cmd of Object.values(this.subCmds)) {
-			prepareCmd(cmd);
-		}
+		this.addGlobalNamedArgs({
+			help: namedArg(types.booleanFlag, {
+				shortName: "h",
+				description: "Shows the help.",
+			}),
+			version: namedArg(types.booleanFlag, {
+				shortName: "v",
+				description: "Shows the version.",
+			}),
+		});
 	}
 
 	public parse(
@@ -82,7 +70,6 @@ export class ExtendedCli<
 	}
 
 	protected processParsedCmdForSelectedCmd(
-		cmdName: string | undefined,
 		cmd: Cmd<ExtendedData<TData>>,
 		parsedCmd: ParsedCmd
 	):
@@ -97,7 +84,6 @@ export class ExtendedCli<
 				data: {
 					isExtendedCmd: true,
 					kind: "helpCmd",
-					cmdName,
 					cmd,
 				},
 			};
@@ -127,18 +113,13 @@ export class ExtendedCli<
 			};
 		}
 
-		const result = super.processParsedCmdForSelectedCmd(
-			cmdName,
-			cmd,
-			parsedCmd
-		);
+		const result = super.processParsedCmdForSelectedCmd(cmd, parsedCmd);
 
 		if ("errors" in result) {
 			return {
 				data: {
 					isExtendedCmd: true,
 					kind: "helpCmd",
-					cmdName,
 					cmd,
 					errors: result.errors,
 				},

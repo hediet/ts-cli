@@ -1,37 +1,69 @@
-import { CmdFactory, NamedCmdArgOptions, NamedArgFactory } from "./cmd-builder";
-import { Cmd, CmdInterpretError } from "./cmd";
+import {
+	NamedCmdArgOptions,
+	NamedArgsToTypes,
+	PositionalArgsToTypes,
+} from "./cmd-builder";
+import { Cmd, CmdInterpretError, PositionalCmdArg, NamedCmdArg } from "./cmd";
 import { CmdParser, ParsedCmd, CmdParseError } from "./parser";
 import { Errors, ErrorsImpl } from "./errors";
 import { CmdAssembleError } from "./assembler";
 import { mapObject } from "./utils";
 
-export type CmdDescription<
-	TCommand,
-	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
-> = (cmdFactory: CmdFactory<TCommand, TSharedNamedArgs>) => Cmd<TCommand>;
-
-export type CliOptions<
-	TCmdData,
-	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
-> = {
-	sharedNamedArgs?: (f: NamedArgFactory) => TSharedNamedArgs;
-	mainCmd?: CmdDescription<TCmdData, TSharedNamedArgs>;
-	subCmds?: Record<string, CmdDescription<TCmdData, TSharedNamedArgs>>;
-};
-
-export type CliCmd<TCmdData> = { name: string | undefined } & Cmd<TCmdData>;
-
 export class Cli<
 	TCmdData,
-	TSharedNamedArgs extends Record<string, NamedCmdArgOptions>
+	TGlobalNamedArgs extends Record<string, NamedCmdArgOptions> = {}
 > {
-	public readonly mainCmd: Cmd<TCmdData> | undefined;
-	public readonly subCmds: Record<string, Cmd<TCmdData>>;
+	public readonly cmds: Cmd<TCmdData>[] = [];
 
-	constructor(options: CliOptions<TCmdData, TSharedNamedArgs>) {
-		const factory = new CmdFactory<TCmdData, TSharedNamedArgs>();
-		this.mainCmd = options.mainCmd && options.mainCmd(factory);
-		this.subCmds = mapObject(options.subCmds || {}, val => val(factory));
+	public addGlobalNamedArgs<
+		TGlobalNamedArgs2 extends Record<string, NamedCmdArgOptions>
+	>(
+		args: TGlobalNamedArgs2
+	): Cli<TCmdData, TGlobalNamedArgs & TGlobalNamedArgs2> {
+		return this as any;
+	}
+
+	public addSubCmd<
+		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
+		TPositionalArgs extends PositionalCmdArg[] = []
+	>(options: {
+		name: string;
+		description?: string;
+		positionalArgs?: TPositionalArgs;
+		namedArgs?: TNamedArgs;
+
+		getData: (
+			args: NamedArgsToTypes<TNamedArgs> &
+				PositionalArgsToTypes<TPositionalArgs> &
+				NamedArgsToTypes<TGlobalNamedArgs>
+		) => TCmdData;
+	}): this {
+		const cmd = new Cmd<TCmdData>(
+			options.name,
+			options.description,
+			options.positionalArgs || [],
+			options.namedArgs
+				? mapObject(
+						options.namedArgs,
+						(val, key) =>
+							new NamedCmdArg(
+								key,
+								val.type,
+								val.description,
+								val.shortName
+							)
+				  )
+				: {},
+			options.getData as any
+		);
+		if (this.cmds.find(c => c.name === cmd.name)) {
+			throw new Error(
+				`Command with name "${cmd.name}" has already been added.`
+			);
+		}
+		this.cmds.push(cmd);
+
+		return this;
 	}
 
 	public parse(
@@ -76,14 +108,14 @@ export class Cli<
 					| CmdCliError
 				>;
 		  } {
-		let cmd = this.mainCmd;
+		let cmd = this.cmds.find(c => c.name === undefined);
 		const firstCmd = parsedCmd.parts[0];
 		let selectedSubCmd =
 			firstCmd && firstCmd.kind === "Value" ? firstCmd.value : undefined;
 		if (selectedSubCmd) {
-			const subs = this.subCmds;
-			if (subs && selectedSubCmd in subs) {
-				cmd = subs[selectedSubCmd];
+			const subCmd = this.cmds.find(c => c.name === selectedSubCmd);
+			if (subCmd) {
+				cmd = subCmd;
 				parsedCmd.parts.shift();
 			}
 		}
@@ -105,15 +137,10 @@ export class Cli<
 			};
 		}
 
-		return this.processParsedCmdForSelectedCmd(
-			selectedSubCmd,
-			cmd,
-			parsedCmd
-		);
+		return this.processParsedCmdForSelectedCmd(cmd, parsedCmd);
 	}
 
 	protected processParsedCmdForSelectedCmd(
-		cmdName: string | undefined,
 		cmd: Cmd<TCmdData>,
 		parsedCmd: ParsedCmd
 	):

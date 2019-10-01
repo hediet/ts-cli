@@ -37,6 +37,7 @@ export type CmdInterpretError =
 
 export class Cmd<TCmdData> {
 	constructor(
+		public readonly name: string | undefined,
 		public readonly description: string | undefined,
 		public readonly positionalArgs: PositionalCmdArg[],
 		public readonly namedArgs: Record<string, NamedCmdArg>,

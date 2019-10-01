@@ -1,4 +1,4 @@
-import { ExtendedCli } from "@hediet/cli-lib";
+import { ExtendedData, Cli } from "@hediet/cli-lib";
 import { printCmdHelp } from "./printCmdHelp";
 import { printCliHelp } from "./printCliHelp";
 
@@ -7,10 +7,10 @@ export interface CliInfo {
 	version: string;
 }
 
-export function runExtendedCli<TData>(options: {
-	cli: ExtendedCli<TData>;
+export function runExtendedCli<TCmdData>(options: {
+	cli: Cli<ExtendedData<TCmdData>, any>;
 	info: CliInfo;
-	dataHandler: (data: TData) => Promise<void>;
+	dataHandler: (data: TCmdData) => Promise<void>;
 	args?: string[];
 }) {
 	const cmdArgs = options.args || process.argv.slice(2);
@@ -37,7 +37,7 @@ export function runExtendedCli<TData>(options: {
 				if (data.cmd) {
 					printCmdHelp(
 						{
-							cmdName: data.cmdName,
+							cmdName: data.cmd.name,
 							appName: options.info.appName,
 						},
 						data.cmd
