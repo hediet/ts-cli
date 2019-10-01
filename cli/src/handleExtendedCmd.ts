@@ -1,4 +1,4 @@
-import { ExtendedData, Cli } from "@hediet/cli-lib";
+import { ExtendedData, Cli, cliToSchema } from "@hediet/cli-lib";
 import { printCmdHelp } from "./printCmdHelp";
 import { printCliHelp } from "./printCliHelp";
 
@@ -48,7 +48,9 @@ export function runExtendedCli<TCmdData>(options: {
 
 				return;
 			case "schemaCmd":
-				console.log("show schema");
+				console.log(
+					JSON.stringify(cliToSchema(options.cli), undefined, 4)
+				);
 				return;
 		}
 	} else {

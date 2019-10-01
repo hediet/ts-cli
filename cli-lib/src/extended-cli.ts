@@ -39,6 +39,12 @@ export class ExtendedCli<
 				shortName: "v",
 				description: "Shows the version.",
 			}),
+			"cmd::gui": namedArg(types.booleanFlag, {
+				description: "Shows a gui.",
+			}),
+			"cmd::schema": namedArg(types.booleanFlag, {
+				description: "Shows the schema.",
+			}),
 		});
 	}
 

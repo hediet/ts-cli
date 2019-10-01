@@ -14,12 +14,26 @@ export class Cli<
 	TGlobalNamedArgs extends Record<string, NamedCmdArgOptions> = {}
 > {
 	public readonly cmds: Cmd<TCmdData>[] = [];
+	public readonly globalNamedArgs: Record<string, NamedCmdArg> = {};
 
 	public addGlobalNamedArgs<
 		TGlobalNamedArgs2 extends Record<string, NamedCmdArgOptions>
 	>(
 		args: TGlobalNamedArgs2
 	): Cli<TCmdData, TGlobalNamedArgs & TGlobalNamedArgs2> {
+		Object.assign(
+			this.globalNamedArgs,
+			mapObject(
+				args,
+				(val, key) =>
+					new NamedCmdArg(
+						key,
+						val.type,
+						val.description,
+						val.shortName
+					)
+			)
+		);
 		return this as any;
 	}
 
@@ -42,18 +56,22 @@ export class Cli<
 			options.name,
 			options.description,
 			options.positionalArgs || [],
-			options.namedArgs
-				? mapObject(
-						options.namedArgs,
-						(val, key) =>
-							new NamedCmdArg(
-								key,
-								val.type,
-								val.description,
-								val.shortName
-							)
-				  )
-				: {},
+			Object.assign(
+				{},
+				options.namedArgs
+					? mapObject(
+							options.namedArgs,
+							(val, key) =>
+								new NamedCmdArg(
+									key,
+									val.type,
+									val.description,
+									val.shortName
+								)
+					  )
+					: {},
+				this.globalNamedArgs
+			),
 			options.getData as any
 		);
 		if (this.cmds.find(c => c.name === cmd.name)) {

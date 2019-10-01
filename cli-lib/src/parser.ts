@@ -75,7 +75,7 @@ export class CmdParser {
 		const prefix = isNamedMatch[1];
 		const rest = isNamedMatch[2];
 
-		const namedArg = /^([a-zA-Z0-9_]+)(=(.*))?$/;
+		const namedArg = /^([a-zA-Z0-9:_]+)(=(.*))?$/;
 		const namedArgMatch = namedArg.exec(rest);
 
 		if (namedArgMatch) {

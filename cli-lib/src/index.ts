@@ -5,3 +5,4 @@ export * from "./cmd-builder";
 export * from "./param-types";
 export * from "./extended-cli";
 export * from "./cli";
+export * from "./schema";
