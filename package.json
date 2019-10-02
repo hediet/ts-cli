@@ -3,6 +3,7 @@
 	"workspaces": [
 		"cli-lib",
 		"cli",
+		"cli/ui",
 		"demo"
 	]
 }
