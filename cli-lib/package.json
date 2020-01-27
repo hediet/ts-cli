@@ -1,7 +1,7 @@
 {
 	"name": "@hediet/cli-lib",
 	"description": "A CLI helper library for TypeScript.",
-	"version": "0.3.0",
+	"version": "0.5.0",
 	"author": {
 		"name": "Henning Dieterichs",
 		"email": "henning.dieterichs@live.de"
@@ -22,7 +22,7 @@
 	},
 	"dependencies": {
 		"@hediet/std": "^0.6.0",
-		"@hediet/semantic-json": "^0.0.4"
+		"@hediet/semantic-json": "^0.0.5"
 	},
 	"devDependencies": {
 		"@types/mocha": "^5.2.7",
