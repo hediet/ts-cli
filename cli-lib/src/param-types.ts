@@ -1,3 +1,12 @@
+import {
+	Serializer,
+	sNumber,
+	sLiteral,
+	sString,
+	sArray,
+	BaseSerializer,
+} from "@hediet/semantic-json";
+
 export type PositionalParamType<T> = TypeWithDefaultValueHelper<
 	T,
 	SingleValueParamType<T> | MultiValueParamType<T>
@@ -12,6 +21,13 @@ type TypeWithDefaultValueHelper<T, TType extends ParamType<T>> =
 	| TType
 	| TypeWithDefaultValue<T, TType>;
 
+export interface ArgParseError {
+	kind: "ArgParseError";
+	message: string;
+}
+
+export type ParseResult<T> = { result: T } | { error: ArgParseError };
+
 export abstract class ParamType<T> {
 	public get T(): T {
 		throw new Error();
@@ -23,13 +39,15 @@ export abstract class ParamType<T> {
 		return new TypeWithDefaultValue<T | TDefault, this>(this, defaultValue);
 	}
 
-	abstract parseStrings(values: string[]): T;
+	abstract parseStrings(values: string[]): ParseResult<T>;
 
 	abstract toString(): string;
 
 	public getRealType(): this {
 		return this;
 	}
+
+	public abstract get serializer(): Serializer<T, any>;
 
 	public itemToString(): string {
 		return this.toString();
@@ -56,31 +74,35 @@ export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
 	public itemToString(): string {
 		return this.type.itemToString();
 	}
+
+	public get serializer(): Serializer<T, any> {
+		return this.type.serializer;
+	}
 }
 
 export abstract class NoValueParamType<T> extends ParamType<T> {
 	public readonly kind = "NoValue";
 	public abstract parse(): T;
 
-	public parseStrings(values: string[]): T {
-		return this.parse();
+	public parseStrings(values: string[]): { result: T } {
+		return { result: this.parse() };
 	}
 }
 
 export abstract class SingleValueParamType<T> extends ParamType<T> {
 	public readonly kind = "SingleValue";
-	public abstract parse(val: string): T;
+	public abstract parse(val: string): ParseResult<T>;
 
-	public parseStrings(values: string[]): T {
+	public parseStrings(values: string[]): ParseResult<T> {
 		return this.parse(values[0]);
 	}
 }
 
 export abstract class MultiValueParamType<T> extends ParamType<T> {
 	public readonly kind = "MultiValue";
-	public abstract parse(val: string[]): T;
+	public abstract parse(val: string[]): ParseResult<T>;
 
-	public parseStrings(values: string[]): T {
+	public parseStrings(values: string[]): ParseResult<T> {
 		return this.parse(values);
 	}
 }
@@ -93,35 +115,76 @@ export class TrueParamType extends NoValueParamType<true> {
 	toString() {
 		return "true";
 	}
-}
 
-export class IntParamType extends SingleValueParamType<number> {
-	parse(value: string) {
-		return parseInt(value, 10);
-	}
-
-	toString() {
-		return "int";
+	public get serializer(): Serializer<true, any> {
+		return sLiteral(true);
 	}
 }
 
-export class NumberParamType extends SingleValueParamType<number> {
-	parse(value: string) {
-		return parseFloat(value);
+export class StringSerializerParamType<T> extends SingleValueParamType<T> {
+	constructor(public readonly serializer: BaseSerializer<T, string>) {
+		super();
+	}
+
+	public parse(value: string): ParseResult<T> {
+		const r = this.serializer.deserializeTyped(value);
+		if (r.isOk) {
+			return { result: r.value };
+		} else {
+			const message = r.errors.map(e => e.message).join("\n");
+			return { error: { kind: "ArgParseError", message } };
+		}
 	}
 
 	toString() {
-		return "number";
+		return this.serializer.toString();
+	}
+}
+
+export class NumberSerializerParamType<T> extends SingleValueParamType<T> {
+	constructor(
+		public readonly serializer: BaseSerializer<T, number>,
+		private readonly name: string
+	) {
+		super();
+	}
+
+	public parse(value: string): ParseResult<T> {
+		const numberVal = parseFloat(value);
+		if (Number.isNaN(numberVal)) {
+			return {
+				error: {
+					kind: "ArgParseError",
+					message: `String "${value}" is not a valid float.`,
+				},
+			};
+		}
+
+		const r = this.serializer.deserializeTyped(numberVal);
+		if (r.isOk) {
+			return { result: r.value };
+		} else {
+			const message = r.errors.map(e => e.message).join("\n");
+			return { error: { kind: "ArgParseError", message } };
+		}
+	}
+
+	toString() {
+		return this.name;
 	}
 }
 
 export class StringParamType extends SingleValueParamType<string> {
-	parse(value: string): string {
-		return value;
+	parse(value: string): ParseResult<string> {
+		return { result: value };
 	}
 
 	toString() {
 		return "string";
+	}
+
+	public get serializer(): Serializer<string, any> {
+		return sString;
 	}
 }
 
@@ -130,12 +193,16 @@ export class ChoiceParamType<T extends string> extends SingleValueParamType<T> {
 		super();
 	}
 
-	parse(value: string): T {
-		return value as T;
+	parse(value: string): ParseResult<T> {
+		return { result: value as T };
 	}
 
 	toString() {
 		return this.choices.join(" | ");
+	}
+
+	public get serializer(): Serializer<T, any> {
+		return sString as any;
 	}
 }
 
@@ -144,8 +211,17 @@ export class ArrayType<TItem> extends MultiValueParamType<TItem[]> {
 		super();
 	}
 
-	parse(items: string[]): TItem[] {
-		return items.map(item => this.itemType.parse(item));
+	parse(items: string[]): ParseResult<TItem[]> {
+		const result = new Array<TItem>();
+		for (const i of items) {
+			const r = this.itemType.parse(i);
+			if ("result" in r) {
+				result.push(r.result);
+			} else {
+				return r;
+			}
+		}
+		return { result };
 	}
 
 	toString() {
@@ -155,12 +231,16 @@ export class ArrayType<TItem> extends MultiValueParamType<TItem[]> {
 	itemToString() {
 		return this.itemType.toString();
 	}
+
+	public get serializer(): Serializer<TItem[], any> {
+		return sArray(this.itemType.serializer);
+	}
 }
 
 export const types = {
 	booleanFlag: new TrueParamType().withDefaultValue(false),
-	int: new IntParamType(),
-	number: new NumberParamType(),
+	int: new NumberSerializerParamType(sNumber, "int"),
+	number: new NumberSerializerParamType(sNumber, "number"),
 	string: new StringParamType(),
 	choice: <T extends string>(...choices: T[]) => new ChoiceParamType(choices),
 	arrayOf: <T>(itemType: SingleValueParamType<T>) =>

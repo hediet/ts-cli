@@ -1,8 +1,23 @@
-import { PositionalParamType, NamedParamType } from "./param-types";
+import {
+	PositionalParamType,
+	NamedParamType,
+	ArgParseError,
+	ParseResult,
+} from "./param-types";
 import { ParsedCmd } from "./parser";
 import { CmdAssembler, NamedArg, CmdAssembleError } from "./assembler";
 import { Errors, ErrorsImpl } from "./errors";
 import { mapObject } from "./utils";
+import {
+	BaseSerializer,
+	sObject,
+	sLiteral,
+	field,
+	namespace,
+	NamedSerializer,
+} from "@hediet/semantic-json";
+import { InstantiatedCmd, cliNs } from "./schema";
+import { deserializationValue } from "@hediet/semantic-json/dist/src/result";
 
 export interface PositionalCmdArg<TName extends string = string, T = unknown> {
 	name: TName;
@@ -14,8 +29,9 @@ export class NamedCmdArg<T = unknown> {
 	constructor(
 		public readonly name: string,
 		public readonly type: NamedParamType<T>,
-		public readonly description?: string,
-		public readonly shortName?: string
+		public readonly description: string | undefined,
+		public readonly shortName: string | undefined,
+		public readonly excludeFromSchema: boolean
 	) {}
 
 	get isOptional(): boolean {
@@ -41,31 +57,17 @@ export class Cmd<TCmdData> {
 		public readonly description: string | undefined,
 		public readonly positionalArgs: PositionalCmdArg[],
 		public readonly namedArgs: Record<string, NamedCmdArg>,
-		private readonly dataBuilder: (
+		private readonly dataBuilder?: (
 			args: Record<string, unknown>
 		) => TCmdData
 	) {}
 
-	public parseArgsAndGetData(
-		cmd: ParsedCmd
-	):
-		| { data: TCmdData }
-		| {
-				errors: Errors<CmdAssembleError | CmdInterpretError>;
-		  } {
-		const args = this.parseArgs(cmd);
-		if (args.errors.hasErrors) {
-			return { errors: args.errors };
-		}
-		const data = this.dataBuilder(args.values);
-		return { data };
-	}
-
 	public parseArgs(
 		cmd: ParsedCmd
 	): {
-		values: Record<string, unknown>;
-		errors: Errors<CmdAssembleError | CmdInterpretError>;
+		parsedArgs: { readonly [paramName: string]: unknown };
+		dataFactory: (() => TCmdData) | undefined;
+		errors: Errors<CmdAssembleError | CmdInterpretError | ArgParseError>;
 	} {
 		function expectType<T>(item: T) {
 			return item;
@@ -85,19 +87,21 @@ export class Cmd<TCmdData> {
 			namedArgs,
 		});
 
-		const errors = new ErrorsImpl<CmdAssembleError | CmdInterpretError>();
+		const errors = new ErrorsImpl<
+			CmdAssembleError | CmdInterpretError | ArgParseError
+		>();
 
 		const asm = assembler.process(cmd);
 		errors.addFrom(asm.errors);
 
-		const values: Record<string, unknown> = {};
+		const parsedArgs: Record<string, unknown> = {};
 		for (const [key, argInfo] of Object.entries(this.namedArgs)) {
 			const argVal = asm.namedArgs[key];
-			let parsed: unknown;
+			let parsed: ParseResult<unknown>;
 			if (argVal) {
 				parsed = argInfo.type.getRealType().parseStrings(argVal.values);
 			} else if (argInfo.type.kind === "TypeWithDefaultValue") {
-				parsed = argInfo.type.defaultValue;
+				parsed = { result: argInfo.type.defaultValue };
 			} else {
 				errors.addError({
 					kind: "MissingRequiredArgument",
@@ -106,19 +110,24 @@ export class Cmd<TCmdData> {
 				});
 				continue;
 			}
-			values[key] = parsed;
+
+			if ("result" in parsed) {
+				parsedArgs[key] = parsed.result;
+			} else {
+				errors.addError(parsed.error);
+			}
 		}
 
 		const positionalArgs = asm.positionalArgs.slice();
 		for (const argInfo of this.positionalArgs) {
-			let value: unknown;
+			let value: ParseResult<unknown>;
 			const realType = argInfo.type.getRealType();
 			if (realType.kind === "SingleValue") {
 				const arg = positionalArgs.shift();
 
 				if (!arg) {
 					if (argInfo.type.kind === "TypeWithDefaultValue") {
-						value = argInfo.type.defaultValue;
+						value = { result: argInfo.type.defaultValue };
 					} else {
 						errors.addError({
 							kind: "MissingPositionalValue",
@@ -136,9 +145,70 @@ export class Cmd<TCmdData> {
 				const n: never = realType;
 				throw new Error();
 			}
-			values[argInfo.name] = value;
+
+			if ("result" in value) {
+				parsedArgs[argInfo.name] = value.result;
+			} else {
+				errors.addError(value.error);
+			}
 		}
 
-		return { values, errors };
+		const dataBuilder = this.dataBuilder;
+		const dataFactory =
+			dataBuilder && !errors.hasErrors
+				? () => dataBuilder(parsedArgs)
+				: undefined;
+
+		return { parsedArgs, errors, dataFactory };
+	}
+
+	public getSerializer(): NamedSerializer<InstantiatedCmd<TCmdData>, any> {
+		return sObject({
+			properties: {
+				cmd: sLiteral(this.name || "main"),
+				...Object.fromEntries(
+					this.positionalArgs.map(arg => [
+						arg.name,
+						field({
+							serializer: arg.type.serializer,
+							optional: false,
+							description: arg.description,
+						}),
+					])
+				),
+				...Object.fromEntries(
+					Object.entries(this.namedArgs)
+						.filter(([_, arg]) => !arg.excludeFromSchema)
+						.map(([name, arg]) => [
+							arg.name,
+							field({
+								serializer: arg.type.serializer,
+								optional: arg.isOptional,
+								description: arg.description,
+							}),
+						])
+				),
+			},
+		})
+			.refine<InstantiatedCmd<TCmdData>>({
+				canSerialize: (i): i is InstantiatedCmd<TCmdData> =>
+					i instanceof InstantiatedCmd,
+				deserialize: i => {
+					delete i.cmd;
+					const dataBuilder = this.dataBuilder;
+					if (!dataBuilder) {
+						throw new Error("No data builder set.");
+					}
+					return deserializationValue(
+						new InstantiatedCmd<TCmdData>(() =>
+							dataBuilder(i as any)
+						)
+					);
+				},
+				serialize: i => {
+					throw new Error("Not supported!");
+				},
+			})
+			.defineAs(cliNs("cmd-" + (this.name || "main")));
 	}
 }

@@ -32,47 +32,5 @@ describe("CommandLineParser", () => {
 		const assembled = a.process(parsed);
 	});
 
-	it("parse", () => {
-		const cli = new Cli<Record<string, unknown>>({
-			mainCmd: f =>
-				f.cmd(
-					{
-						description: "test",
-						positionalArgs: [
-							f.positionalArg(
-								"mode",
-								types.choice("test", "bla"),
-								{
-									description: "The test",
-								}
-							),
-						],
-						namedArgs: {
-							verbose: f.namedArg(types.booleanFlag, {
-								description: "The foo",
-								shortName: "v",
-							}),
-						},
-					},
-					args => args
-				),
-			subCmds: {
-				watch: f =>
-					f.cmd(
-						{
-							description: "watches files",
-							positionalArgs: [
-								f.positionalArg("files", types.string, {
-									description: "the files to watch",
-								}),
-							],
-						},
-						args => args
-					),
-			},
-		});
-
-		const cmd = cli.parse(["watcah", "uiae"]);
-		console.log(cmd);
-	});
+	it("parse", () => {});
 });

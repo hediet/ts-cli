@@ -1,4 +1,4 @@
-import { CliInfo } from "./handleExtendedCmd";
+import { CliInfo } from "./runCliWithDefaultArgs";
 
 export function cliInfoFromPackageJson(path: string): CliInfo {
 	const pkgJson = require(path) as { name: string; version: string };

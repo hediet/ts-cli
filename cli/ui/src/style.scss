@@ -1,6 +1,7 @@
 @import "~normalize.css";
 @import "~@blueprintjs/core/lib/css/blueprint.css";
 @import "~@blueprintjs/icons/lib/css/blueprint-icons.css";
+@import "~@hediet/semantic-json-react/style.scss";
 
 body {
 	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -8,6 +9,24 @@ body {
 	padding: 0px;
 	border: 0px;
 
+	padding: 0px;
+}
+
+.component-GUI {
+	margin: 20px;
+
+	> .part-button {
+		display: flex;
+		flex-direction: row-reverse;
+		padding-right: 10px;
+	}
+}
+
+body,
+html,
+.target,
+.component-GUI {
 	margin: 0;
-	padding: 0;
+	height: 100%;
+	width: 100%;
 }

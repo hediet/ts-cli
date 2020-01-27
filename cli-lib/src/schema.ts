@@ -1,69 +1,61 @@
-import { Cli } from ".";
-import { Cmd, NamedCmdArg, PositionalCmdArg } from "./cmd";
-import { NamedParamType } from "./param-types";
+import { Cli } from "./cli";
+import {
+	sTypePackage,
+	TypePackageDef,
+	NamespacedName,
+	TypeSystem,
+	sObject,
+	field,
+	sString,
+	namespace,
+	sArray,
+} from "@hediet/semantic-json";
+import { deserializationValue } from "@hediet/semantic-json";
 
 export interface CliSchema {
-	cmds: CmdSchema[];
+	mainType: NamespacedName;
+	defaultType?: NamespacedName;
+	typePackages: TypePackageDef[];
 }
 
-export interface CmdSchema {
-	name: string | undefined;
-	description: string | undefined;
-	positionalArgs: PositionalArgSchema[];
-	namedArgs: NamedArgSchema[];
-}
+export const cliNs = namespace("hediet.de/cli");
 
-export interface PositionalArgSchema {
-	name: string;
-	description: string | undefined;
-	type: ArgTypeSchema;
-}
+const sNamespacedName = sObject({
+	properties: {
+		namespace: sString,
+		name: sString,
+	},
+}).refine<NamespacedName>({
+	canSerialize: (ns): ns is NamespacedName => ns instanceof NamespacedName,
+	deserialize: ns =>
+		deserializationValue(new NamespacedName(ns.namespace, ns.name)),
+	serialize: ns => ({
+		namespace: ns.namespace,
+		name: ns.name,
+	}),
+});
 
-export interface NamedArgSchema {
-	name: string;
-	description: string | undefined;
-	type: ArgTypeSchema;
-}
-
-export interface ArgTypeSchema {
-	name: string;
-	defaultValue: unknown;
-}
+export const sSchema = sObject({
+	properties: {
+		mainType: sNamespacedName,
+		defaultType: field({ serializer: sNamespacedName, optional: true }),
+		typePackages: sArray(sTypePackage),
+	},
+});
 
 export function cliToSchema(cli: Cli<any>): CliSchema {
+	const ts = new TypeSystem();
+
+	const serializer = cli.getSerializer();
+
+	const tp = serializer.getType(ts);
+	const typePackages = ts.definedPackages();
 	return {
-		cmds: cli.cmds.map(c => cmdToSchema(c)),
+		mainType: tp.namespacedName,
+		typePackages,
 	};
 }
 
-function cmdToSchema(cmd: Cmd<any>): CmdSchema {
-	return {
-		name: cmd.name,
-		description: cmd.description,
-		positionalArgs: cmd.positionalArgs.map(a => positionalArgToSchema(a)),
-		namedArgs: Object.values(cmd.namedArgs).map(a => namedArgToSchema(a)),
-	};
-}
-
-function positionalArgToSchema(arg: PositionalCmdArg): PositionalArgSchema {
-	return {
-		name: arg.name,
-		description: arg.description,
-		type: typeToSchema(arg.type),
-	};
-}
-
-function namedArgToSchema(arg: NamedCmdArg<any>): NamedArgSchema {
-	return {
-		name: arg.name,
-		description: arg.description,
-		type: typeToSchema(arg.type),
-	};
-}
-
-function typeToSchema(type: NamedParamType<any>): ArgTypeSchema {
-	return {
-		name: type.toString(),
-		defaultValue: undefined,
-	};
+export class InstantiatedCmd<TCmdData> {
+	constructor(public readonly getData: () => TCmdData) {}
 }

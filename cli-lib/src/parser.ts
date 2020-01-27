@@ -1,10 +1,17 @@
-import { BaseError, Errors, ErrorsImpl } from "./errors";
+import { Errors, ErrorsImpl } from "./errors";
 
 export class ParsedCmd {
 	constructor(
 		readonly parts: ParsedCmdPart[],
 		readonly errors: Errors<CmdParseError>
 	) {}
+
+	public get prefixValue(): string | undefined {
+		const firstPart = this.parts[0];
+		return firstPart && firstPart.kind === "Value"
+			? firstPart.value
+			: undefined;
+	}
 
 	public findNamedPart(options: {
 		name?: string;
@@ -75,7 +82,7 @@ export class CmdParser {
 		const prefix = isNamedMatch[1];
 		const rest = isNamedMatch[2];
 
-		const namedArg = /^([a-zA-Z0-9:_]+)(=(.*))?$/;
+		const namedArg = /^([a-zA-Z0-9:_\-]+)(=(.*))?$/;
 		const namedArgMatch = namedArg.exec(rest);
 
 		if (namedArgMatch) {

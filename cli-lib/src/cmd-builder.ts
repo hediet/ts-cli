@@ -5,6 +5,7 @@ export interface NamedCmdArgOptions<T = unknown> {
 	type: NamedParamType<T>;
 	description?: string;
 	shortName?: string;
+	excludeFromSchema: boolean;
 }
 
 export type NamedArgsToTypes<
@@ -15,7 +16,7 @@ export type NamedArgsToTypes<
 
 export type UnionToIntersection<U> = (U extends any
 	? (k: U) => void
-	: never) extends ((k: infer I) => void)
+	: never) extends (k: infer I) => void
 	? I
 	: never;
 export type Merge<T> = UnionToIntersection<T[keyof T]>;
@@ -29,12 +30,17 @@ export type PositionalArgsToTypes<TArgs extends PositionalCmdArg[]> = Merge<
 
 export function namedArg<T>(
 	type: NamedParamType<T>,
-	options: { description?: string; shortName?: string }
+	options: {
+		description?: string;
+		shortName?: string;
+		excludeFromSchema?: boolean;
+	}
 ): NamedCmdArgOptions<T> {
 	return {
 		type,
 		description: options && options.description,
 		shortName: options && options.shortName,
+		excludeFromSchema: !!options.excludeFromSchema,
 	};
 }
 

@@ -20,7 +20,8 @@ export function getUsage(cmd: Cmd<any>): string {
 				`--${v.name}={${v.type.itemToString()}}${starIfMultiple(
 					v.type
 				)}`
-		)}`;
+		)
+		.join(" ")}`;
 }
 
 export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
@@ -37,10 +38,16 @@ export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
 	console.log();
 
 	console.log("Required Parameters");
-	printParameters(Object.values(cmd.namedArgs).filter(v => !v.isOptional));
+	printParameters(
+		"      ",
+		Object.values(cmd.namedArgs).filter(v => !v.isOptional)
+	);
 	console.log();
 	console.log("Optional Parameters");
-	printParameters(Object.values(cmd.namedArgs).filter(v => v.isOptional));
+	printParameters(
+		"      ",
+		Object.values(cmd.namedArgs).filter(v => v.isOptional)
+	);
 }
 
 function starIfMultiple(type: NamedParamType<any>): string {
@@ -50,13 +57,18 @@ function starIfMultiple(type: NamedParamType<any>): string {
 	return "";
 }
 
-function printParameters(params: NamedCmdArg<any>[]): void {
+export function printParameters(
+	indentation: string,
+	params: NamedCmdArg<any>[]
+): void {
 	for (const arg of Object.values(params)) {
 		const short = arg.shortName !== undefined ? `-${arg.shortName}, ` : "";
 		const val =
 			arg.type.getRealType().kind === "NoValue"
 				? ""
 				: `={${arg.type.itemToString()}}${starIfMultiple(arg.type)}`;
-		console.log(`      ${short}--${arg.name}${val}    ${arg.description}`);
+		console.log(
+			`${indentation}${short}--${arg.name}${val}    ${arg.description}`
+		);
 	}
 }
