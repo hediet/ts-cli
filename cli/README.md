@@ -24,7 +24,7 @@ yarn add @hediet/cli
 
 # Usage
 
-This example demonstrates almost the entiry API:
+This example demonstrates most of the API:
 
 ```ts
 import {
@@ -37,6 +37,7 @@ import {
 } from "@hediet/cli";
 import { join } from "path";
 
+// An arbitrary type.
 interface CmdData {
 	run(): Promise<void>;
 }
@@ -76,7 +77,7 @@ const cli = createCliWithDefaultArgs<CmdData>()
 	});
 
 // Processes command line arguments
-// and invokes the handler with the selected command data.
+// and invokes the handler with data obtained from `getData` of the selected command.
 // Also processes `--help`, `--version` and other global flags.
 runCliWithDefaultArgs({
 	info: cliInfoFromPackageJson(join(__dirname, "./package.json")),

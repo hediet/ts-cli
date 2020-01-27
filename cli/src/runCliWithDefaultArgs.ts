@@ -9,12 +9,34 @@ import { printCliHelp } from "./help/printCliHelp";
 import { showGui } from "./showGui";
 import { CliInfo } from "./cli-info";
 
-export function runCliWithDefaultArgs<TCmdData>(options: {
+export interface RunCliWithDefaultArgsOptions<TCmdData> {
+	/**
+	 * The cli to process.
+	 */
 	cli: Cli<TCmdData, CliDefaultGlobalArgs>;
+	/**
+	 * General app info for help and version commands.
+	 * Use `cliInfoFromPackageJson` to read info from your `package.json`.
+	 */
 	info: CliInfo;
+	/**
+	 * Asynchronously process the data returned by the `getData` of the selected command.
+	 */
 	dataHandler: (data: TCmdData) => Promise<void>;
+	/**
+	 * The arguments to parse. Use `process.argv.slice(2)` by default.
+	 */
 	args?: string[];
-}) {
+}
+
+/**
+ * Processes command line arguments and invokes the handler
+ * with data obtained from `getData` of the selected command.
+ * Also processes `--help`, `--version` and other global flags.
+ */
+export function runCliWithDefaultArgs<TCmdData>(
+	options: RunCliWithDefaultArgsOptions<TCmdData>
+) {
 	const cmdArgs = options.args || process.argv.slice(2);
 	const result = options.cli.parse(cmdArgs);
 
