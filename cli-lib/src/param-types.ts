@@ -5,6 +5,9 @@ import {
 	sString,
 	sArray,
 	BaseSerializer,
+	UnionType,
+	LiteralType,
+	sUnion,
 } from "@hediet/semantic-json";
 
 export type PositionalParamType<T> = TypeWithDefaultValueHelper<
@@ -122,7 +125,10 @@ export class TrueParamType extends NoValueParamType<true> {
 }
 
 export class StringSerializerParamType<T> extends SingleValueParamType<T> {
-	constructor(public readonly serializer: BaseSerializer<T, string>) {
+	constructor(
+		public readonly serializer: BaseSerializer<T, string>,
+		private readonly name: string
+	) {
 		super();
 	}
 
@@ -137,7 +143,7 @@ export class StringSerializerParamType<T> extends SingleValueParamType<T> {
 	}
 
 	toString() {
-		return this.serializer.toString();
+		return this.name;
 	}
 }
 
@@ -174,35 +180,11 @@ export class NumberSerializerParamType<T> extends SingleValueParamType<T> {
 	}
 }
 
-export class StringParamType extends SingleValueParamType<string> {
-	parse(value: string): ParseResult<string> {
-		return { result: value };
-	}
-
-	toString() {
-		return "string";
-	}
-
-	public get serializer(): Serializer<string, any> {
-		return sString;
-	}
-}
-
-export class ChoiceParamType<T extends string> extends SingleValueParamType<T> {
+export class ChoiceParamType<
+	T extends string
+> extends StringSerializerParamType<T> {
 	constructor(public readonly choices: T[]) {
-		super();
-	}
-
-	parse(value: string): ParseResult<T> {
-		return { result: value as T };
-	}
-
-	toString() {
-		return this.choices.join(" | ");
-	}
-
-	public get serializer(): Serializer<T, any> {
-		return sString as any;
+		super(sUnion(...choices.map(c => sLiteral(c))), choices.join("|"));
 	}
 }
 
@@ -241,10 +223,14 @@ export const types = {
 	booleanFlag: new TrueParamType().withDefaultValue(false),
 	int: new NumberSerializerParamType(sNumber, "int"),
 	number: new NumberSerializerParamType(sNumber, "number"),
-	string: new StringParamType(),
+	string: new StringSerializerParamType(sString, "string"),
 	choice: <T extends string>(...choices: T[]) => new ChoiceParamType(choices),
 	arrayOf: <T>(itemType: SingleValueParamType<T>) =>
 		new ArrayType<T>(itemType),
-	/*file: (options: { relativeTo?: string }) =>
-		new SingleValueParamType(val => val),*/
+	/*
+	TODO
+
+	file: (options: { relativeTo?: string }) =>
+		new SingleValueParamType(val => val),
+	*/
 };

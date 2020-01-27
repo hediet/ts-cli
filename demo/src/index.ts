@@ -50,10 +50,11 @@ const cli = createCliWithDefaultArgs<CmdData>()
 			positionalArg("input", types.string, {
 				description: "What to echo.",
 			}),
+			positionalArg("mode", types.choice("default", "special", "fast")),
 		],
 		getData: args => ({
 			async run() {
-				console.log("echo:", args.input);
+				console.log("echo:", args.input, `(${args.mode})`);
 			},
 		}),
 	});

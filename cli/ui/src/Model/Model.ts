@@ -11,8 +11,11 @@ import {
 } from "@hediet/semantic-json";
 import { NodeContainer, createDefaultNode } from "@hediet/semantic-json-react";
 
+const urlParams = new URLSearchParams(window.location.search);
+const wsPortParam = urlParams.get("wsPort");
+
 export class Model {
-	port: number = 12345;
+	port: number = parseInt(wsPortParam!, 10);
 
 	@observable.ref
 	public server: typeof uiContract.TServerInterface | undefined = undefined;

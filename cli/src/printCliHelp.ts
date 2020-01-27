@@ -10,7 +10,7 @@ export function printCliHelp(cli: Cli<any>, info: CliInfo): void {
 	console.log("Available Commands");
 	console.log("");
 	for (const cmd of cli.cmds) {
-		console.log(`   ${getUsage(cmd)}  ${cmd.description}`);
+		console.log(`   ${getUsage(cmd)}  ${cmd.description || ""}`);
 	}
 
 	console.log("");
