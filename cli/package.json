@@ -1,7 +1,7 @@
 {
 	"name": "@hediet/cli",
 	"description": "A CLI library for TypeScript and NodeJS.",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"author": {
 		"name": "Henning Dieterichs",
 		"email": "henning.dieterichs@live.de"
@@ -22,8 +22,8 @@
 		"test": "mocha --require source-map-support/register dist/test/**/*.js"
 	},
 	"dependencies": {
-		"@hediet/cli-lib": "^0.5.0",
-		"@hediet/semantic-json": "0.0.5",
+		"@hediet/cli-lib": "^0.5.1",
+		"@hediet/semantic-json": "^0.0.6",
 		"@hediet/std": "^0.6.0",
 		"@hediet/typed-json-rpc": "0.7.7",
 		"@hediet/typed-json-rpc-websocket": "0.7.7",

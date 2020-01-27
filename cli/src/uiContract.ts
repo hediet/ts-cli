@@ -2,7 +2,6 @@ import {
 	contract,
 	requestContract,
 	types,
-	notification,
 	notificationContract,
 	JSONValue,
 } from "@hediet/typed-json-rpc";
@@ -12,6 +11,7 @@ export const uiContract = contract({
 	client: {},
 	server: {
 		getSchema: requestContract({
+			// TODO properly type this when typed-json-rpc loses JSON type bound
 			result: types.any as types.Type<
 				/*typeof sSchema["TSource"]*/ JSONValue
 			>,

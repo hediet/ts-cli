@@ -99,7 +99,7 @@ async function launchChrome(url: string): Promise<Disposable> {
 				try {
 					chrome.process.kill();
 				} catch (e) {
-					// chrome should exist anyways when connection closes
+					// chrome should exit on its own when connection closes anyways
 				}
 			}
 		},

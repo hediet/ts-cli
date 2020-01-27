@@ -1,12 +1,11 @@
 import { Cmd, NamedCmdArg, ParamType, NamedParamType } from "@hediet/cli-lib";
 
 export interface HelpInfo {
-	cmdName: string | undefined;
 	appName: string;
 }
 
 export function getUsage(cmd: Cmd<any>): string {
-	return `${cmd.name} ${cmd.positionalArgs
+	return `${cmd.name ? cmd.name + " " : ""}${cmd.positionalArgs
 		.map(
 			arg =>
 				`{${arg.name}:${arg.type.itemToString()}}${starIfMultiple(

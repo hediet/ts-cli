@@ -2,14 +2,4 @@
 
 [![](https://img.shields.io/twitter/follow/hediet_dev.svg?style=social)](https://twitter.com/intent/follow?screen_name=hediet_dev)
 
-# Install
-
-To install the base library:
-
-```
-yarn add @hediet/cli
-```
-
-# Features
-
-# Usage
+See [here](./cli/README.md) for the README of the `@hediet/cli` package.

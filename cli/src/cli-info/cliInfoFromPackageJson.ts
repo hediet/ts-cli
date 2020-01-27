@@ -1,4 +1,4 @@
-import { CliInfo } from "./runCliWithDefaultArgs";
+import { CliInfo } from "./CliInfo";
 
 export function cliInfoFromPackageJson(path: string): CliInfo {
 	const pkgJson = require(path) as { name: string; version: string };

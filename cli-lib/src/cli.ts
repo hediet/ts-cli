@@ -74,7 +74,7 @@ export class Cli<
 		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
 		TPositionalArgs extends PositionalCmdArg[] = []
 	>(options: {
-		name: string | undefined;
+		name?: string | undefined;
 		description?: string;
 		positionalArgs?: TPositionalArgs;
 		namedArgs?: TNamedArgs;

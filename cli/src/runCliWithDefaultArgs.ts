@@ -4,14 +4,10 @@ import {
 	cliToSchema,
 	sSchema,
 } from "@hediet/cli-lib";
-import { printCmdHelp } from "./printCmdHelp";
-import { printCliHelp } from "./printCliHelp";
+import { printCmdHelp } from "./help/printCmdHelp";
+import { printCliHelp } from "./help/printCliHelp";
 import { showGui } from "./showGui";
-
-export interface CliInfo {
-	appName: string;
-	version: string;
-}
+import { CliInfo } from "./cli-info";
 
 export function runCliWithDefaultArgs<TCmdData>(options: {
 	cli: Cli<TCmdData, CliDefaultGlobalArgs>;
@@ -34,21 +30,33 @@ export function runCliWithDefaultArgs<TCmdData>(options: {
 		if (result.selectedCmd) {
 			printCmdHelp(
 				{
-					cmdName: result.selectedCmd.name,
 					appName: options.info.appName,
 				},
 				result.selectedCmd
 			);
+			if (
+				result.selectedCmd.name === undefined &&
+				options.cli.cmds.length > 1
+			) {
+				console.log();
+				console.log("----------------------");
+				console.log();
+				printCliHelp(options.cli, options.info, true);
+			}
 		} else {
 			printCliHelp(options.cli, options.info);
 		}
 		console.log();
+		if (result.errors.hasErrors) {
+			process.exit(1);
+		}
 	}
 
 	function run(data: TCmdData) {
 		options.dataHandler(data).catch(e => {
 			// todo
 			console.error(e);
+			process.exit(1);
 		});
 	}
 

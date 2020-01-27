@@ -14,7 +14,7 @@ interface CmdData {
 
 const cli = createCliWithDefaultArgs<CmdData>()
 	.addCmd({
-		name: "print",
+		//name: "print",
 		description: "Prints selected files.",
 		positionalArgs: [
 			positionalArg("files", types.arrayOf(types.string), {
