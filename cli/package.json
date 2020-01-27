@@ -1,7 +1,7 @@
 {
 	"name": "@hediet/cli",
 	"description": "A CLI library for TypeScript and NodeJS.",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"author": {
 		"name": "Henning Dieterichs",
 		"email": "henning.dieterichs@live.de"
