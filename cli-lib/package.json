@@ -1,10 +1,13 @@
 {
 	"name": "@hediet/cli-lib",
 	"description": "A CLI helper library for TypeScript.",
-	"version": "0.5.2",
+	"version": "0.6.0",
 	"author": {
 		"name": "Henning Dieterichs",
 		"email": "henning.dieterichs@live.de"
+	},
+	"repository": {
+		"url": "https://github.com/hediet/ts-cli"
 	},
 	"license": "MIT",
 	"directories": {
