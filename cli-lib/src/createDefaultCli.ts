@@ -15,15 +15,19 @@ export function createDefaultCli<TData>() {
 			description: "Shows the version.",
 			excludeFromSchema: true,
 		}),
-		"cmd::gui": namedParam(types.booleanFlag, {
+		"cli::verbose": namedParam(types.booleanFlag, {
+			description: "Logs verbose info.",
+			excludeFromSchema: true,
+		}),
+		"cli::gui": namedParam(types.booleanFlag, {
 			description: "Shows a gui.",
 			excludeFromSchema: true,
 		}),
-		"cmd::schema": namedParam(types.booleanFlag, {
+		"cli::schema": namedParam(types.booleanFlag, {
 			description: "Shows the schema.",
 			excludeFromSchema: true,
 		}),
-		"cmd::json-args": namedParam(types.string.withDefaultValue(undefined), {
+		"cli::json-args": namedParam(types.string.withDefaultValue(undefined), {
 			description: "Reads json input.",
 			excludeFromSchema: true,
 		}),

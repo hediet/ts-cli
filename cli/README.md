@@ -12,7 +12,7 @@ Uses semantic versioning.
 -   **Lightweight** - Only has a small API surface and no feature bloat.
 -   **Fully typed** - Every parameter has a static type arguments are validated against.
 -   **Fully reflective** - A help text is generated automatically.
--   **Embedded GUI** - Use `--cmd::gui` to launch an html based GUI which assists with specifying arguments.
+-   **Embedded GUI** - Use `--cli::gui` to launch an html based GUI which assists with specifying arguments.
 
 # Installation
 
@@ -124,7 +124,7 @@ For the example above, the generated UI looks like this:
 
 ![](./docs/gui.png)
 
-The UI can be launched with `ts-node ./demo --cmd::gui`.
+The UI can be launched with `ts-node ./demo --cli::gui`.
 
 # Architecture
 

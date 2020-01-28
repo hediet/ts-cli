@@ -8,35 +8,41 @@ import finalhandler = require("finalhandler");
 import serveStatic = require("serve-static");
 import { join } from "path";
 import { AddressInfo } from "net";
+import { ConsoleRpcLogger } from "@hediet/typed-json-rpc";
 
 export async function showGui<TCmd>(
 	cli: Cli<TCmd>,
 	run: (cmd: TCmd) => void,
-	selectedCmd: Cmd<TCmd> | undefined
+	selectedCmd: Cmd<TCmd> | undefined,
+	verbose: boolean
 ) {
 	let chrome: Disposable | undefined;
-
 	const { httpServerDisposable, httpServerPort } = startHttpServer();
 
 	const server = startWebSocketServer({ port: 0 }, async stream => {
-		uiContract.registerServerToStream(stream, undefined, {
-			getSchema: async () => {
-				const schema = cliToSchema(cli);
-				schema.defaultType = selectedCmd
-					? selectedCmd.getSerializer().namespacedName
-					: undefined;
-				const json = sSchema.serialize(schema);
-				return json as any;
-			},
-			run: async args => {
-				const s = cli.getSerializer();
-				const o = s.deserialize(args.args).unwrap();
-				const data = o.getData();
-				run(data);
+		const { channel } = uiContract.registerServerToStream(
+			stream,
+			verbose ? new ConsoleRpcLogger() : undefined,
+			{
+				getSchema: async () => {
+					const schema = cliToSchema(cli);
+					schema.defaultType = selectedCmd
+						? selectedCmd.getSerializer().namespacedName
+						: undefined;
+					const json = sSchema.serialize(schema);
+					return json as any;
+				},
+				run: async args => {
+					const s = cli.getSerializer();
+					const o = s.deserialize(args.args).unwrap();
+					const data = o.getData();
+					run(data);
 
-				server.close();
-			},
-		});
+					server.close();
+				},
+			}
+		);
+		channel.sendExceptionDetails = true;
 		await stream.onClosed;
 
 		server.dispose();
@@ -54,7 +60,9 @@ export async function showGui<TCmd>(
 		try {
 			chrome = await launchChrome(url);
 		} catch (e) {
-			console.log(e);
+			if (verbose) {
+				console.log("Error while launching chrome:", e);
+			}
 		}
 		console.log(url);
 	} catch (error) {}

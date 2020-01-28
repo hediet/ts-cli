@@ -82,22 +82,28 @@ export function runDefaultCli<TCmdData>(
 		});
 	}
 
+	let verbose = false;
+
+	if (result.parsedArgs["cli::verbose"]) {
+		verbose = true;
+	}
+
 	if (result.parsedArgs["help"]) {
 		showHelp();
 		return;
 	} else if (result.parsedArgs["version"]) {
 		console.log(`version: ${options.info.version}`);
 		return;
-	} else if (result.parsedArgs["cmd::gui"]) {
-		showGui(options.cli, run, result.selectedCmd);
+	} else if (result.parsedArgs["cli::gui"]) {
+		showGui(options.cli, run, result.selectedCmd, verbose);
 		return;
-	} else if (result.parsedArgs["cmd::schema"]) {
+	} else if (result.parsedArgs["cli::schema"]) {
 		const schema = cliToSchema(options.cli);
 		const json = sSchema.serialize(schema);
 		console.log(JSON.stringify(json, undefined, 4));
 		return;
-	} else if (result.parsedArgs["cmd::json-args"] !== undefined) {
-		const jsonStr = result.parsedArgs["cmd::json-args"];
+	} else if (result.parsedArgs["cli::json-args"] !== undefined) {
+		const jsonStr = result.parsedArgs["cli::json-args"];
 		const json = JSON.parse(jsonStr);
 		const cmd = options.cli
 			.getSerializer()
