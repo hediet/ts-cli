@@ -29,11 +29,11 @@ This example demonstrates most of the API:
 ```ts
 import {
 	types,
-	runCliWithDefaultArgs,
+	runDefaultCli,
 	cliInfoFromPackageJson,
-	namedArg,
-	positionalArg,
-	createCliWithDefaultArgs,
+	namedParam,
+	positionalParam,
+	createDefaultCli,
 } from "@hediet/cli";
 import { join } from "path";
 
@@ -42,22 +42,26 @@ interface CmdData {
 	run(): Promise<void>;
 }
 
-const cli = createCliWithDefaultArgs<CmdData>()
+const cli = createDefaultCli<CmdData>()
 	// Defines a command with name `print`
 	.addCmd({
 		name: "print",
 		description: "Prints selected files.",
-		positionalArgs: [
-			positionalArg("files", types.arrayOf(types.string), {
+		// In `open --mode=read-only foo.txt`, `foo.txt` would be a positional argument.
+		positionalParams: [
+			positionalParam("files", types.arrayOf(types.string), {
 				description: "The files to print.",
 			}),
 		],
-		namedArgs: {
-			onlyFileNames: namedArg(types.booleanFlag, {
+		// In `open --mode read-only`, `read-only` would be a named argument,
+		// if `mode` is a parameter that accepts at least one argument.
+		// Otherwise, `read-only` would be a positional argument.
+		namedParams: {
+			onlyFileNames: namedParam(types.booleanFlag, {
 				shortName: "n",
 				description: "Only print filenames",
 			}),
-			count: namedArg(types.int, {
+			count: namedParam(types.int, {
 				description: "The count",
 			}),
 		},
@@ -79,13 +83,36 @@ const cli = createCliWithDefaultArgs<CmdData>()
 // Processes command line arguments
 // and invokes the handler with data obtained from `getData` of the selected command.
 // Also processes `--help`, `--version` and other global flags.
-runCliWithDefaultArgs({
+runDefaultCli({
 	info: cliInfoFromPackageJson(join(__dirname, "./package.json")),
 	cli,
 	// Asynchronously process an instance of `CmdData` here as you like.
 	dataHandler: data => data.run(),
 });
 ```
+
+# CLI Syntax
+
+The parser accepts the following EBNF for a single part (`PART`):
+
+```
+PART ::= ("--"|"/") PARAM_NAME ("=" VALUE)?
+			| "-" SHORT_PARAM_NAME ("=" VALUE)?
+			| "-" SHORT_PARAM_NAME+
+			| POSITIONAL_SEPERATOR
+			| VALUE
+
+POSITIONAL_SEPERATOR ::= "--"
+SHORT_PARAM_NAME ::= [a-zA-Z_:]
+PARAM_NAME ::= SHORT_PARAM_NAME [a-zA-Z_:0-9-]*
+VALUE ::= .*
+```
+
+Parts are splitted by the underlying shell.
+
+A single `POSITIONAL_SEPERATOR` is used to treat all following parts as value.
+
+`-abc` is the same as `-a -b -c`. To avoid confusion, grouped parameters.
 
 # GUI
 
@@ -98,6 +125,73 @@ For the example above, the generated UI looks like this:
 
 The UI can be launched with `ts-node ./demo --cmd::gui`.
 
+# Architecture
+
+Primary goal of this library is to process the command line arguments passed to the current process.
+
+The user writes the command line arguments as a single string:
+
+```sh
+foo bar --baz qux quux /x=y
+```
+
+This string is splitted by his shell and then passed as an array of strings to the launched process (`foo`):
+
+```json
+["bar", "--baz", "qux", "quux", "/x=y"]
+```
+
+The original process cannot reconstruct the original command line argument string as whitespaces are lost.
+
+## [Parser](../cli-lib/src/parser.ts)
+
+This string array is parsed by the `Parser` class.
+Each array item is classified as value or as parameter that might have a value:
+
+```ts
+[
+	Value("bar"),
+	Param("baz"),
+	Value("qux"),
+	Value("quux"),
+	ParamWithValue("x", "y"),
+];
+```
+
+This structure is a `ParsedCmd`.
+
+## [Assembler](../cli-lib/src/parser.ts)
+
+`ParsedCmd`s are transformed into an `AssembledCmd` by the `CmdAssembler` class.
+The assembler needs to know how many arguments a parameter can accept (`NoValue`, `SingleValue` or `MultiValue`).
+Depending on that, parts are assembled together into positional and named arguments.
+
+If `baz` and `x` are `SingleValue`-parameters, the result would be:
+
+```ts
+[
+	PositionalArg("bar"),
+	NamedArg("baz", ["qux"]),
+	PositionalArg("quux"),
+	NamedArg("x", ["y"]),
+];
+```
+
+## [Cmd](../cli-lib/src/cmd.ts)
+
+A `Cmd` defines typed parameters and can transform a `ParsedCmd`
+into user defined data by using the `Assembler` and [type parsers](../cli-lib/src/param-types.ts).
+
+## [Cli](../cli-lib/src/cli.ts)
+
+These commands are organized in instances of the `Cli` class.
+Given a string array, it detects the specified command and asks the command to get the user defined data.
+
+## [runDefaultCli](./src/runDefaultCli.ts)
+
+This function takes a `Cli` instance and executes a data handler, prints a help, the version or launches a GUI,
+depending on the current command line args.
+
 # TODOs
 
-See open issues on github. Feel free to contribute!
+See open issues on github. Feel free to contribute and asking questions! ;)

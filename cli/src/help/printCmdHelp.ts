@@ -1,18 +1,18 @@
-import { Cmd, NamedCmdArg, ParamType, NamedParamType } from "@hediet/cli-lib";
+import { Cmd, NamedCmdParam, NamedParamType } from "@hediet/cli-lib";
 
 export interface HelpInfo {
 	appName: string;
 }
 
 export function getUsage(cmd: Cmd<any>): string {
-	return `${cmd.name ? cmd.name + " " : ""}${cmd.positionalArgs
+	return `${cmd.name ? cmd.name + " " : ""}${cmd.positionalParams
 		.map(
 			arg =>
 				`{${arg.name}:${arg.type.itemToString()}}${starIfMultiple(
 					arg.type
 				)}`
 		)
-		.join(" ")} ${Object.values(cmd.namedArgs)
+		.join(" ")} ${Object.values(cmd.namedParams)
 		.filter(v => !v.isOptional)
 		.map(
 			v =>
@@ -29,7 +29,7 @@ export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
 	console.log(`      ${cmd.description}`);
 	console.log("");
 	console.log("Positional Parameters");
-	for (const arg of cmd.positionalArgs) {
+	for (const arg of cmd.positionalParams) {
 		console.log(
 			`      ${arg.name}: ${arg.type.toString()}    ${arg.description}`
 		);
@@ -39,13 +39,13 @@ export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
 	console.log("Required Parameters");
 	printParameters(
 		"      ",
-		Object.values(cmd.namedArgs).filter(v => !v.isOptional)
+		Object.values(cmd.namedParams).filter(v => !v.isOptional)
 	);
 	console.log();
 	console.log("Optional Parameters");
 	printParameters(
 		"      ",
-		Object.values(cmd.namedArgs).filter(v => v.isOptional)
+		Object.values(cmd.namedParams).filter(v => v.isOptional)
 	);
 }
 
@@ -58,7 +58,7 @@ function starIfMultiple(type: NamedParamType<any>): string {
 
 export function printParameters(
 	indentation: string,
-	params: NamedCmdArg<any>[]
+	params: NamedCmdParam<any>[]
 ): void {
 	for (const arg of Object.values(params)) {
 		const short = arg.shortName !== undefined ? `-${arg.shortName}, ` : "";

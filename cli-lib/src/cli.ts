@@ -1,36 +1,36 @@
 import {
-	NamedCmdArgOptions,
-	NamedArgsToTypes,
-	PositionalArgsToTypes,
+	NamedCmdParamOptions,
+	NamedParamsToTypes,
+	PositionalParamsToTypes,
 } from "./cmd-builder";
-import { Cmd, CmdInterpretError, PositionalCmdArg, NamedCmdArg } from "./cmd";
+import {
+	Cmd,
+	CmdInterpretError,
+	PositionalCmdParam,
+	NamedCmdParam,
+} from "./cmd";
 import { CmdParser, ParsedCmd, CmdParseError } from "./parser";
 import { Errors, ErrorsImpl } from "./errors";
 import { CmdAssembleError } from "./assembler";
 import { mapObject } from "./utils";
-import {
-	sUnion,
-	namespace,
-	BaseSerializer,
-	NamedSerializer,
-} from "@hediet/semantic-json";
+import { sUnion, NamedSerializer } from "@hediet/semantic-json";
 import { InstantiatedCmd, cliNs } from "./schema";
 import { ArgParseError } from "./param-types";
 
 export class Cli<
 	TCmdData,
-	TGlobalNamedArgs extends Record<string, NamedCmdArgOptions> = {}
+	TGlobalNamedParams extends Record<string, NamedCmdParamOptions> = {}
 > {
 	public get TCmdData(): TCmdData {
 		throw new Error("Do not access this field on runtime");
 	}
 
-	public get TGlobalNamedArgs(): TGlobalNamedArgs {
+	public get TGlobalNamedParams(): TGlobalNamedParams {
 		throw new Error("Do not access this field on runtime");
 	}
 
 	private readonly _cmds: Cmd<TCmdData>[] = [];
-	private readonly _globalNamedArgs: Record<string, NamedCmdArg> = {};
+	private readonly _globalNamedParams: Record<string, NamedCmdParam> = {};
 
 	public get mainCmd(): Cmd<TCmdData> | undefined {
 		return this.findCmd(undefined);
@@ -44,21 +44,21 @@ export class Cli<
 		return this._cmds;
 	}
 
-	public get globalNamedArgs(): { readonly [name: string]: NamedCmdArg } {
-		return this._globalNamedArgs;
+	public get globalNamedParams(): { readonly [name: string]: NamedCmdParam } {
+		return this._globalNamedParams;
 	}
 
-	public addGlobalNamedArgs<
-		TGlobalNamedArgs2 extends Record<string, NamedCmdArgOptions>
+	public addGlobalNamedParams<
+		TNewGlobalNamedParams extends Record<string, NamedCmdParamOptions>
 	>(
-		args: TGlobalNamedArgs2
-	): Cli<TCmdData, TGlobalNamedArgs & TGlobalNamedArgs2> {
+		args: TNewGlobalNamedParams
+	): Cli<TCmdData, TGlobalNamedParams & TNewGlobalNamedParams> {
 		Object.assign(
-			this._globalNamedArgs,
+			this._globalNamedParams,
 			mapObject(
 				args,
 				(val, key) =>
-					new NamedCmdArg(
+					new NamedCmdParam(
 						key,
 						val.type,
 						val.description,
@@ -71,31 +71,31 @@ export class Cli<
 	}
 
 	public addCmd<
-		TNamedArgs extends Record<string, NamedCmdArgOptions> = {},
-		TPositionalArgs extends PositionalCmdArg[] = []
+		TNamedParams extends Record<string, NamedCmdParamOptions> = {},
+		TPositionalParams extends PositionalCmdParam[] = []
 	>(options: {
 		name?: string | undefined;
 		description?: string;
-		positionalArgs?: TPositionalArgs;
-		namedArgs?: TNamedArgs;
+		positionalParams?: TPositionalParams;
+		namedParams?: TNamedParams;
 
 		getData: (
-			args: NamedArgsToTypes<TNamedArgs> &
-				PositionalArgsToTypes<TPositionalArgs> &
-				NamedArgsToTypes<TGlobalNamedArgs>
+			args: NamedParamsToTypes<TNamedParams> &
+				PositionalParamsToTypes<TPositionalParams> &
+				NamedParamsToTypes<TGlobalNamedParams>
 		) => TCmdData;
 	}): this {
 		const cmd = new Cmd<TCmdData>(
 			options.name,
 			options.description,
-			options.positionalArgs || [],
+			options.positionalParams || [],
 			Object.assign(
 				{},
-				options.namedArgs
+				options.namedParams
 					? mapObject(
-							options.namedArgs,
+							options.namedParams,
 							(val, key) =>
-								new NamedCmdArg(
+								new NamedCmdParam(
 									key,
 									val.type,
 									val.description,
@@ -104,7 +104,7 @@ export class Cli<
 								)
 					  )
 					: {},
-				this._globalNamedArgs
+				this._globalNamedParams
 			),
 			options.getData as any
 		);
@@ -122,7 +122,7 @@ export class Cli<
 		argv: string[]
 	): {
 		parsedArgs: {
-			readonly [TKey in keyof TGlobalNamedArgs]?: TGlobalNamedArgs[TKey]["type"]["T"];
+			readonly [TKey in keyof TGlobalNamedParams]?: TGlobalNamedParams[TKey]["type"]["T"];
 		};
 		dataFactory: (() => TCmdData) | undefined;
 		selectedCmd: Cmd<TCmdData> | undefined;
@@ -171,7 +171,7 @@ export class Cli<
 				undefined,
 				undefined,
 				[],
-				this.globalNamedArgs,
+				this.globalNamedParams,
 				undefined
 			);
 			const { parsedArgs } = cmd.parseArgs(parsedCmd);

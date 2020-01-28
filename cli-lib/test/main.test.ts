@@ -19,7 +19,7 @@ describe("CommandLineParser", () => {
 		]);
 
 		const a = new CmdAssembler({
-			namedArgs: {
+			namedParams: {
 				silent: { kind: "NoValue" },
 				v: { kind: "NoValue", shortName: "v" },
 				a: { kind: "NoValue", shortName: "a" },

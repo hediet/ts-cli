@@ -9,7 +9,7 @@ import { printCliHelp } from "./help/printCliHelp";
 import { showGui } from "./showGui";
 import { CliInfo } from "./cli-info";
 
-export interface RunCliWithDefaultArgsOptions<TCmdData> {
+export interface RunDefaultCliOptions<TCmdData> {
 	/**
 	 * The cli to process.
 	 */
@@ -34,8 +34,8 @@ export interface RunCliWithDefaultArgsOptions<TCmdData> {
  * with data obtained from `getData` of the selected command.
  * Also processes `--help`, `--version` and other global flags.
  */
-export function runCliWithDefaultArgs<TCmdData>(
-	options: RunCliWithDefaultArgsOptions<TCmdData>
+export function runDefaultCli<TCmdData>(
+	options: RunDefaultCliOptions<TCmdData>
 ) {
 	const cmdArgs = options.args || process.argv.slice(2);
 	const result = options.cli.parse(cmdArgs);

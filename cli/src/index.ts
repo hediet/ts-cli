@@ -1,3 +1,3 @@
 export * from "@hediet/cli-lib";
-export * from "./runCliWithDefaultArgs";
+export * from "./runDefaultCli";
 export * from "./cli-info";

@@ -5,8 +5,6 @@ import {
 	sString,
 	sArray,
 	BaseSerializer,
-	UnionType,
-	LiteralType,
 	sUnion,
 } from "@hediet/semantic-json";
 

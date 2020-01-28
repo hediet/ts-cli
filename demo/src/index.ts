@@ -1,10 +1,10 @@
 import {
 	types,
-	runCliWithDefaultArgs,
+	runDefaultCli,
 	cliInfoFromPackageJson,
-	namedArg,
-	positionalArg,
-	createCliWithDefaultArgs,
+	namedParam,
+	positionalParam,
+	createDefaultCli,
 } from "@hediet/cli";
 import { join } from "path";
 
@@ -12,21 +12,21 @@ interface CmdData {
 	run(): Promise<void>;
 }
 
-const cli = createCliWithDefaultArgs<CmdData>()
+const cli = createDefaultCli<CmdData>()
 	.addCmd({
-		//name: "print",
+		name: "print",
 		description: "Prints selected files.",
-		positionalArgs: [
-			positionalArg("files", types.arrayOf(types.string), {
+		positionalParams: [
+			positionalParam("files", types.arrayOf(types.string), {
 				description: "The files to print.",
 			}),
 		],
-		namedArgs: {
-			onlyFileNames: namedArg(types.booleanFlag, {
+		namedParams: {
+			onlyFileNames: namedParam(types.booleanFlag, {
 				shortName: "n",
 				description: "Only print filenames",
 			}),
-			count: namedArg(types.int, {
+			count: namedParam(types.int, {
 				description: "The count",
 			}),
 		},
@@ -46,11 +46,22 @@ const cli = createCliWithDefaultArgs<CmdData>()
 	.addCmd({
 		name: "echo",
 		description: "Echos an input.",
-		positionalArgs: [
-			positionalArg("input", types.string, {
+		namedParams: {
+			a: namedParam(types.booleanFlag, {
+				shortName: "a",
+			}),
+			b: namedParam(types.booleanFlag, {
+				shortName: "b",
+			}),
+			c: namedParam(types.string, {
+				shortName: "c",
+			}),
+		},
+		positionalParams: [
+			positionalParam("input", types.string, {
 				description: "What to echo.",
 			}),
-			positionalArg("mode", types.choice("default", "special", "fast")),
+			positionalParam("mode", types.choice("default", "special", "fast")),
 		],
 		getData: args => ({
 			async run() {
@@ -59,7 +70,7 @@ const cli = createCliWithDefaultArgs<CmdData>()
 		}),
 	});
 
-runCliWithDefaultArgs({
+runDefaultCli({
 	info: cliInfoFromPackageJson(join(__dirname, "../package.json")),
 	cli,
 	dataHandler: data => data.run(),

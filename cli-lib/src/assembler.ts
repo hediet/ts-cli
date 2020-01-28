@@ -2,35 +2,35 @@ import { ParsedCmd } from "./parser";
 import { ErrorsImpl, Errors } from "./errors";
 
 export interface CmdAssemblerOptions {
-	namedArgs: Record<string, NamedArg>;
+	namedParams: Record<string, NamedParam>;
 }
 
-export type NamedArgKind = "NoValue" | "SingleValue" | "MultiValue";
+export type NamedParamKind = "NoValue" | "SingleValue" | "MultiValue";
 
-export interface NamedArg {
-	kind: NamedArgKind;
+export interface NamedParam {
+	kind: NamedParamKind;
 	shortName?: string;
 }
 
-interface NamedArg2 extends NamedArg {
+interface NamedParam2 extends NamedParam {
 	name: string;
 }
 
 export class CmdAssembler {
-	private readonly namedArgs: Record<string, NamedArg2>;
-	private readonly namedShortArgs: Record<string, NamedArg2>;
+	private readonly namedParams: Record<string, NamedParam2>;
+	private readonly namedShortParams: Record<string, NamedParam2>;
 
 	constructor(args: CmdAssemblerOptions) {
-		this.namedArgs = {};
-		this.namedShortArgs = {};
-		for (const [key, value] of Object.entries(args.namedArgs)) {
+		this.namedParams = {};
+		this.namedShortParams = {};
+		for (const [key, value] of Object.entries(args.namedParams)) {
 			const v = Object.assign({}, value, { name: key });
-			this.namedArgs[key] = v;
+			this.namedParams[key] = v;
 			if (value.shortName !== undefined) {
-				if (this.namedShortArgs[value.shortName]) {
+				if (this.namedShortParams[value.shortName]) {
 					throw new Error(`Duplicated shortName: ${value.shortName}`);
 				}
-				this.namedShortArgs[value.shortName] = v;
+				this.namedShortParams[value.shortName] = v;
 			}
 		}
 	}
@@ -40,19 +40,19 @@ export class CmdAssembler {
 		const positionalArgs = new Array<AssembledCmdValue>();
 		const errors = new ErrorsImpl<CmdAssembleError>();
 
-		function setArg(arg: NamedArg2, values: string[]) {
-			if (namedArgs[arg.name]) {
+		function setArg(param: NamedParam2, values: string[]) {
+			if (namedArgs[param.name]) {
 				errors.addError({
-					kind: "DuplicateArgument",
-					argName: arg.name,
-					message: `A value for argument "${arg.name}" has already been specified.`,
+					kind: "ParameterAlreadySpecified",
+					paramName: param.name,
+					message: `A value for parameter "${param.name}" has already been specified.`,
 				});
 				return;
 			}
 
-			namedArgs[arg.name] = {
+			namedArgs[param.name] = {
 				kind: "NamedArg",
-				name: arg.name,
+				name: param.name,
 				values,
 			};
 		}
@@ -65,20 +65,31 @@ export class CmdAssembler {
 			}
 			if (part.kind === "NamedValue") {
 				const argInfo = (part.isShort
-					? this.namedShortArgs
-					: this.namedArgs)[part.name];
+					? this.namedShortParams
+					: this.namedParams)[part.name];
 				if (!argInfo) {
 					errors.addError({
-						kind: "UnknownArgument",
-						argName: part.name,
-						message: `Did not expect an argument with name "${part.name}".`,
+						kind: "UnknownParameter",
+						paramName: part.name,
+						message: `There is no parameter with name "${part.name}".`,
 					});
 					continue;
+				}
+
+				if (part.isGroup && argInfo.kind !== "NoValue") {
+					errors.addError({
+						kind: "GroupedParametersMustNotAcceptValues",
+						paramName: part.name,
+						message: `Grouped parameters must not accept values, but "${part.name}" does.`,
+					});
 				}
 
 				switch (argInfo.kind) {
 					case "MultiValue":
 						const values = new Array<string>();
+						if (part.value !== undefined) {
+							values.push(part.value);
+						}
 						while (queue[0] && queue[0].kind === "Value") {
 							values.push(queue[0].value);
 							queue.shift();
@@ -97,7 +108,7 @@ export class CmdAssembler {
 						if (!value) {
 							errors.addError({
 								kind: "MissingValue",
-								argName: part.name,
+								paramName: part.name,
 								message: `A value is missing for argument "${part.name}".`,
 							});
 							continue;
@@ -106,6 +117,13 @@ export class CmdAssembler {
 						break;
 
 					case "NoValue":
+						if (part.value !== undefined) {
+							errors.addError({
+								kind: "ParameterDoesNotAcceptValue",
+								paramName: part.name,
+								message: `Parameter "${part.name}" does not accept any values.`,
+							});
+						}
 						setArg(argInfo, []);
 						break;
 					default:
@@ -132,18 +150,28 @@ export interface AssembledCmd {
 
 export type CmdAssembleError =
 	| {
-			kind: "UnknownArgument";
-			argName: string;
+			kind: "ParameterDoesNotAcceptValue";
+			paramName: string;
 			message: string;
 	  }
 	| {
-			kind: "DuplicateArgument";
-			argName: string;
+			kind: "GroupedParametersMustNotAcceptValues";
+			paramName: string;
+			message: string;
+	  }
+	| {
+			kind: "UnknownParameter";
+			paramName: string;
+			message: string;
+	  }
+	| {
+			kind: "ParameterAlreadySpecified";
+			paramName: string;
 			message: string;
 	  }
 	| {
 			kind: "MissingValue";
-			argName: string;
+			paramName: string;
 			message: string;
 	  };
 

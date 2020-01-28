@@ -36,12 +36,12 @@ export function printCliHelp(
 	console.log("  Required Parameters");
 	printParameters(
 		"       ",
-		Object.values(cli.globalNamedArgs).filter(v => !v.isOptional)
+		Object.values(cli.globalNamedParams).filter(v => !v.isOptional)
 	);
 	console.log();
 	console.log("  Optional Parameters");
 	printParameters(
 		"       ",
-		Object.values(cli.globalNamedArgs).filter(v => v.isOptional)
+		Object.values(cli.globalNamedParams).filter(v => v.isOptional)
 	);
 }

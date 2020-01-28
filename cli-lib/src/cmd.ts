@@ -5,7 +5,7 @@ import {
 	ParseResult,
 } from "./param-types";
 import { ParsedCmd } from "./parser";
-import { CmdAssembler, NamedArg, CmdAssembleError } from "./assembler";
+import { CmdAssembler, NamedParam, CmdAssembleError } from "./assembler";
 import { Errors, ErrorsImpl } from "./errors";
 import { mapObject } from "./utils";
 import {
@@ -19,13 +19,16 @@ import {
 import { InstantiatedCmd, cliNs } from "./schema";
 import { deserializationValue } from "@hediet/semantic-json/dist/src/result";
 
-export interface PositionalCmdArg<TName extends string = string, T = unknown> {
+export interface PositionalCmdParam<
+	TName extends string = string,
+	T = unknown
+> {
 	name: TName;
 	description?: string;
 	type: PositionalParamType<T>;
 }
 
-export class NamedCmdArg<T = unknown> {
+export class NamedCmdParam<T = unknown> {
 	constructor(
 		public readonly name: string,
 		public readonly type: NamedParamType<T>,
@@ -41,22 +44,22 @@ export class NamedCmdArg<T = unknown> {
 
 export type CmdInterpretError =
 	| {
-			kind: "MissingRequiredArgument";
+			kind: "MissingRequiredParameter";
 			message: string;
-			argument: NamedCmdArg;
+			param: NamedCmdParam;
 	  }
 	| {
 			kind: "MissingPositionalValue";
 			message: string;
-			argument: PositionalCmdArg;
+			param: PositionalCmdParam;
 	  };
 
 export class Cmd<TCmdData> {
 	constructor(
 		public readonly name: string | undefined,
 		public readonly description: string | undefined,
-		public readonly positionalArgs: PositionalCmdArg[],
-		public readonly namedArgs: Record<string, NamedCmdArg>,
+		public readonly positionalParams: PositionalCmdParam[],
+		public readonly namedParams: Record<string, NamedCmdParam>,
 		private readonly dataBuilder?: (
 			args: Record<string, unknown>
 		) => TCmdData
@@ -73,8 +76,8 @@ export class Cmd<TCmdData> {
 			return item;
 		}
 
-		const namedArgs = mapObject(this.namedArgs, val =>
-			expectType<NamedArg>({
+		const namedArgs = mapObject(this.namedParams, val =>
+			expectType<NamedParam>({
 				kind:
 					val.type.kind === "TypeWithDefaultValue"
 						? val.type.type.kind
@@ -84,29 +87,29 @@ export class Cmd<TCmdData> {
 		);
 
 		const assembler = new CmdAssembler({
-			namedArgs,
+			namedParams: namedArgs,
 		});
 
 		const errors = new ErrorsImpl<
 			CmdAssembleError | CmdInterpretError | ArgParseError
 		>();
 
-		const asm = assembler.process(cmd);
-		errors.addFrom(asm.errors);
+		const asmCmd = assembler.process(cmd);
+		errors.addFrom(asmCmd.errors);
 
 		const parsedArgs: Record<string, unknown> = {};
-		for (const [key, argInfo] of Object.entries(this.namedArgs)) {
-			const argVal = asm.namedArgs[key];
+		for (const [key, param] of Object.entries(this.namedParams)) {
+			const argVal = asmCmd.namedArgs[key];
 			let parsed: ParseResult<unknown>;
 			if (argVal) {
-				parsed = argInfo.type.getRealType().parseStrings(argVal.values);
-			} else if (argInfo.type.kind === "TypeWithDefaultValue") {
-				parsed = { result: argInfo.type.defaultValue };
+				parsed = param.type.getRealType().parseStrings(argVal.values);
+			} else if (param.type.kind === "TypeWithDefaultValue") {
+				parsed = { result: param.type.defaultValue };
 			} else {
 				errors.addError({
-					kind: "MissingRequiredArgument",
-					argument: argInfo,
-					message: `Argument "${key}" has not been specified, but is required.`,
+					kind: "MissingRequiredParameter",
+					param: param,
+					message: `Parameter "${key}" has not been specified, but is required.`,
 				});
 				continue;
 			}
@@ -118,21 +121,21 @@ export class Cmd<TCmdData> {
 			}
 		}
 
-		const positionalArgs = asm.positionalArgs.slice();
-		for (const argInfo of this.positionalArgs) {
+		const positionalArgs = asmCmd.positionalArgs.slice();
+		for (const param of this.positionalParams) {
 			let value: ParseResult<unknown>;
-			const realType = argInfo.type.getRealType();
+			const realType = param.type.getRealType();
 			if (realType.kind === "SingleValue") {
 				const arg = positionalArgs.shift();
 
 				if (!arg) {
-					if (argInfo.type.kind === "TypeWithDefaultValue") {
-						value = { result: argInfo.type.defaultValue };
+					if (param.type.kind === "TypeWithDefaultValue") {
+						value = { result: param.type.defaultValue };
 					} else {
 						errors.addError({
 							kind: "MissingPositionalValue",
-							argument: argInfo,
-							message: `Positional argument "${argInfo.name}" has not been specified, but is required.`,
+							param: param,
+							message: `Positional parameter "${param.name}" has not been specified, but is required.`,
 						});
 						continue;
 					}
@@ -147,7 +150,7 @@ export class Cmd<TCmdData> {
 			}
 
 			if ("result" in value) {
-				parsedArgs[argInfo.name] = value.result;
+				parsedArgs[param.name] = value.result;
 			} else {
 				errors.addError(value.error);
 			}
@@ -167,7 +170,7 @@ export class Cmd<TCmdData> {
 			properties: {
 				cmd: sLiteral(this.name || "main"),
 				...Object.fromEntries(
-					this.positionalArgs.map(arg => [
+					this.positionalParams.map(arg => [
 						arg.name,
 						field({
 							serializer: arg.type.serializer,
@@ -177,7 +180,7 @@ export class Cmd<TCmdData> {
 					])
 				),
 				...Object.fromEntries(
-					Object.entries(this.namedArgs)
+					Object.entries(this.namedParams)
 						.filter(([_, arg]) => !arg.excludeFromSchema)
 						.map(([name, arg]) => [
 							arg.name,

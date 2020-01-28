@@ -47,14 +47,24 @@ export interface ParsedCmdNamedValue {
 }
 
 interface ParserContext {
-	onlyPositional: boolean;
+	onlyAcceptPositionalParts: boolean;
 	errors: ErrorsImpl<CmdParseError>;
 }
 
+/**
+ * Interprets a list of strings as parsed command.
+ * Recognizes `--param arg` as parameter `param` without value,
+ * followed by the value `arg`.
+ * The assembler might associate the value with the parameter.
+ * See README.md for the EBNF.
+ */
 export class CmdParser {
 	public parseArgs(args: string[]): ParsedCmd {
 		const errors = new ErrorsImpl<CmdParseError>();
-		const state: ParserContext = { onlyPositional: false, errors };
+		const state: ParserContext = {
+			onlyAcceptPositionalParts: false,
+			errors,
+		};
 		return new ParsedCmd(
 			new Array<ParsedCmdPart>().concat(
 				...args.map(arg => this.parseArg(arg, state))
@@ -64,12 +74,12 @@ export class CmdParser {
 	}
 
 	private parseArg(arg: string, context: ParserContext): ParsedCmdPart[] {
-		if (context.onlyPositional) {
+		if (context.onlyAcceptPositionalParts) {
 			return [{ kind: "Value", value: arg }];
 		}
 
 		if (arg == "--") {
-			context.onlyPositional = true;
+			context.onlyAcceptPositionalParts = true;
 			return [];
 		}
 
@@ -82,7 +92,7 @@ export class CmdParser {
 		const prefix = isNamedMatch[1];
 		const rest = isNamedMatch[2];
 
-		const namedArg = /^([a-zA-Z0-9:_\-]+)(=(.*))?$/;
+		const namedArg = /^([a-zA-Z_:][a-zA-Z_:0-9\-]*)(=(.*))?$/;
 		const namedArgMatch = namedArg.exec(rest);
 
 		if (namedArgMatch) {
@@ -94,8 +104,9 @@ export class CmdParser {
 				return [...varName].map((char, idx) => ({
 					kind: "NamedValue",
 					name: char,
-					// "-abc=test" will be treated as "-a -b -c=test"
-					// The assembler will report an error for this case.
+					// "-abc=test" will be treated as "-a -b -c=test".
+					// The assembler will report an error, as only the assembler
+					// can recognize "-abc test".
 					value: idx !== varName.length - 1 ? undefined : value,
 					isShort,
 					isGroup: true,
