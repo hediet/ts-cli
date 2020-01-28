@@ -10,3 +10,12 @@ export function mapObject<TObj extends {}, TResult>(
 
 	return result;
 }
+
+export function fromEntries<TKey extends string, TValue>(
+	iterable: [TKey, TValue][]
+): { [TKey2 in TKey]: TValue } {
+	return [...iterable].reduce((obj, [key, val]) => {
+		obj[key] = val;
+		return obj;
+	}, {} as { [TKey2 in TKey]: TValue });
+}

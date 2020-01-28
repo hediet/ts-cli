@@ -7,13 +7,11 @@ import {
 import { ParsedCmd } from "./parser";
 import { CmdAssembler, NamedParam, CmdAssembleError } from "./assembler";
 import { Errors, ErrorsImpl } from "./errors";
-import { mapObject } from "./utils";
+import { mapObject, fromEntries } from "./utils";
 import {
-	BaseSerializer,
 	sObject,
 	sLiteral,
 	field,
-	namespace,
 	NamedSerializer,
 } from "@hediet/semantic-json";
 import { InstantiatedCmd, cliNs } from "./schema";
@@ -169,7 +167,7 @@ export class Cmd<TCmdData> {
 		return sObject({
 			properties: {
 				cmd: sLiteral(this.name || "main"),
-				...Object.fromEntries(
+				...fromEntries(
 					this.positionalParams.map(arg => [
 						arg.name,
 						field({
@@ -179,7 +177,7 @@ export class Cmd<TCmdData> {
 						}),
 					])
 				),
-				...Object.fromEntries(
+				...fromEntries(
 					Object.entries(this.namedParams)
 						.filter(([_, arg]) => !arg.excludeFromSchema)
 						.map(([name, arg]) => [
