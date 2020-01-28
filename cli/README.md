@@ -8,11 +8,18 @@ Uses semantic versioning.
 # Features
 
 -   **Unopinionated** - Does not enforce some folder structure or other architecture decisions.
+-   Supports single-file multi-command applications.
 -   Works with `ts-node` or plain compiled files using `tsc`.
 -   **Lightweight** - Only has a small API surface and no feature bloat.
 -   **Fully typed** - Every parameter has a static type arguments are validated against.
 -   **Fully reflective** - A help text is generated automatically.
 -   **Embedded GUI** - Use `--cli::gui` to launch an html based GUI which assists with specifying arguments.
+
+# Deficits
+
+-   No nicely formatted help yet
+-   No tests yet
+-   API not final
 
 # Installation
 
@@ -125,8 +132,39 @@ For the example above, the generated UI looks like this:
 ![](./docs/gui.png)
 
 The UI can be launched with `ts-node ./demo --cli::gui`.
+If chrome is installed, a window is automatically opened, otherwise an URL will be shown that
+can be opened in any browser.
+
+Advanced UI features (like browsing/autcompletion for files) are planned as part of advancements in `@hediet/semantic-json-react`.
+
+# Comparison
+
+-   [oclif](https://github.com/oclif/oclif)
+
+    -   Enforces a certain folder structure for multi command applications.
+    -   Not easy to integrate into existing code.
+    -   oclif is an entire framework, `@hediet/cli` only a library.
+    -   No GUI support.
+
+-   [clime](https://github.com/vilic/clime)
+
+    -   Enforces a certain folder structure for multi command applications.
+    -   Limited type inference due to use of decorators.
+    -   No GUI support.
+
+-   [@microsoft/ts-command-line](https://github.com/microsoft/rushstack/tree/master/libraries/ts-command-line)
+    -   Weird design
+        -   What is `onDefineParameters` for?
+        -   What happens if `defineFlagParameter` is used on construction?
+    -   Parameters must be declared multiple times.
+    -   No GUI support.
 
 # Architecture
+
+`@hediet/cli-lib` is meant to be isomorphic so it also works in the browser,
+whereas `@hediet/cli` is only meant for NodeJs.
+
+## Internal Data Flow
 
 Primary goal of this library is to process the command line arguments passed to the current process.
 
@@ -144,7 +182,7 @@ This string is splitted by his shell and then passed as an array of strings to t
 
 The original process cannot reconstruct the original command line argument string as whitespaces are lost.
 
-## [Parser](../cli-lib/src/parser.ts)
+### [Parser](../cli-lib/src/parser.ts)
 
 This string array is parsed by the `Parser` class.
 Each array item is classified as value or as parameter that might have a value:
@@ -161,7 +199,7 @@ Each array item is classified as value or as parameter that might have a value:
 
 This information is stored in `ParsedCmd` instances.
 
-## [Assembler](../cli-lib/src/assembler.ts)
+### [Assembler](../cli-lib/src/assembler.ts)
 
 `ParsedCmd`s are transformed into an `AssembledCmd` by the `CmdAssembler` class.
 The assembler needs to know how many arguments a parameter can accept (`NoValue`, `SingleValue` or `MultiValue`).
@@ -178,17 +216,17 @@ If `baz` and `x` are `SingleValue`-parameters, the result would be:
 ];
 ```
 
-## [Cmd](../cli-lib/src/cmd.ts)
+### [Cmd](../cli-lib/src/cmd.ts)
 
 A `Cmd` defines typed parameters and can transform a `ParsedCmd`
 into user defined data by using the `Assembler` and [type parsers](../cli-lib/src/param-types.ts).
 
-## [Cli](../cli-lib/src/cli.ts)
+### [Cli](../cli-lib/src/cli.ts)
 
 These commands are organized in instances of the `Cli` class.
 Given a string array, it detects the specified command and asks the command to get the user defined data.
 
-## [runDefaultCli](./src/runDefaultCli.ts)
+### [runDefaultCli](./src/runDefaultCli.ts)
 
 This function takes a `Cli` instance and executes a data handler, prints a help, the version or launches a GUI,
 depending on the current command line args.
