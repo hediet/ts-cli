@@ -58,6 +58,7 @@ const cli = createDefaultCli<CmdData>()
 		// Otherwise, `read-only` would be a positional argument.
 		namedParams: {
 			onlyFileNames: namedParam(types.booleanFlag, {
+				// use either `--onlyFileNames` or `-n`
 				shortName: "n",
 				description: "Only print filenames",
 			}),
@@ -112,12 +113,12 @@ Parts are splitted by the underlying shell.
 
 A single `POSITIONAL_SEPERATOR` is used to treat all following parts as value.
 
-`-abc` is the same as `-a -b -c`. To avoid confusion, grouped parameters.
+`-abc` is the same as `-a -b -c`. To avoid confusion, grouped parameters must not accept values.
 
 # GUI
 
-This library uses the highly experimental [@hediet/semantic-json](https://github.com/hediet/semantic-json) and
-[@hediet/semantic-json-react](https://github.com/hediet/semantic-json-react) libraries that should not be used on their own right now. They have an incredible potential.
+This library uses my highly experimental libraries [@hediet/semantic-json](https://github.com/hediet/semantic-json) and
+[@hediet/semantic-json-react](https://github.com/hediet/semantic-json-react) which should not be used on their own right now. They have an incredible potential though, as this application demonstrates.
 
 For the example above, the generated UI looks like this:
 
@@ -129,7 +130,7 @@ The UI can be launched with `ts-node ./demo --cmd::gui`.
 
 Primary goal of this library is to process the command line arguments passed to the current process.
 
-The user writes the command line arguments as a single string:
+The user writes the command line arguments as a single string in a shell of his choice:
 
 ```sh
 foo bar --baz qux quux /x=y
@@ -158,9 +159,9 @@ Each array item is classified as value or as parameter that might have a value:
 ];
 ```
 
-This structure is a `ParsedCmd`.
+This information is stored in `ParsedCmd` instances.
 
-## [Assembler](../cli-lib/src/parser.ts)
+## [Assembler](../cli-lib/src/assembler.ts)
 
 `ParsedCmd`s are transformed into an `AssembledCmd` by the `CmdAssembler` class.
 The assembler needs to know how many arguments a parameter can accept (`NoValue`, `SingleValue` or `MultiValue`).
@@ -194,4 +195,4 @@ depending on the current command line args.
 
 # TODOs
 
-See open issues on github. Feel free to contribute and asking questions! ;)
+See open issues on github. Feel free to contribute and ask questions! ;)
