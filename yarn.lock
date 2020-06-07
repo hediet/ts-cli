@@ -149,10 +149,10 @@
     classnames "^2.2"
     tslib "~1.9.0"
 
-"@hediet/semantic-json@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@hediet/semantic-json/-/semantic-json-0.0.1.tgz#1a34412ccf2244b6b84f919a41e527147aac1b9b"
-  integrity sha512-y7qQBbXiXgBHbL8me9k2AcxH4jY5E5pc1SFq3fzFvGjBQKWyd300WRL73PEifSfaq0/gQHgAOKmlTUayyDhlHw==
+"@hediet/semantic-json@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@hediet/semantic-json/-/semantic-json-0.1.0.tgz#ca3831778f1e59e555d0112decd5fe598437fdd3"
+  integrity sha512-lNdXabUmyxXnysXadTKyiKK9ik5L8b9SXu/QshgvE271QObPtp2Ubmh+rLNNCEAO65DE2VAxcesWmRKYfaQSJg==
 
 "@hediet/std@^0.6.0":
   version "0.6.0"
@@ -6472,9 +6472,9 @@ websocket-driver@>=0.5.1:
     websocket-extensions ">=0.1.1"
 
 websocket-extensions@>=0.1.1:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/websocket-extensions/-/websocket-extensions-0.1.3.tgz#5d2ff22977003ec687a4b87073dfbbac146ccf29"
-  integrity sha512-nqHUnMXmBzT0w570r2JpJxfiSD1IzoI+HGVdd3aZ0yNi3ngvQ4jv1dtHt5VGxfI2yj5yqImPhOK4vmIh2xMbGg==
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/websocket-extensions/-/websocket-extensions-0.1.4.tgz#7f8473bc839dfd87608adb95d7eb075211578a42"
+  integrity sha512-OqedPIGOfsDlo31UNwYbCFMSaO9m9G/0faIHj5/dZFDMFqPTcx6UwqyOy3COEaEOg/9VsGIpdqn62W5KhoKSpg==
 
 which-module@^1.0.0:
   version "1.0.0"
