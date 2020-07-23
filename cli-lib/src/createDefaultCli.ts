@@ -3,7 +3,13 @@ import { Cli } from "./cli";
 import { types } from "./param-types";
 import { namedParam } from "./cmd-builder";
 
-export function createDefaultCli<TData>() {
+namedParam(types.booleanFlag, {
+	shortName: "h",
+	description: "Shows help.",
+	excludeFromSchema: true,
+}).type.
+
+export function createDefaultCli<TData = { foo: 2 }>() {
 	return new Cli<TData>().addGlobalNamedParams({
 		help: namedParam(types.booleanFlag, {
 			shortName: "h",

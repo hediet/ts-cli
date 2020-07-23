@@ -149,10 +149,10 @@
     classnames "^2.2"
     tslib "~1.9.0"
 
-"@hediet/semantic-json@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@hediet/semantic-json/-/semantic-json-0.0.1.tgz#1a34412ccf2244b6b84f919a41e527147aac1b9b"
-  integrity sha512-y7qQBbXiXgBHbL8me9k2AcxH4jY5E5pc1SFq3fzFvGjBQKWyd300WRL73PEifSfaq0/gQHgAOKmlTUayyDhlHw==
+"@hediet/semantic-json@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@hediet/semantic-json/-/semantic-json-0.1.0.tgz#ca3831778f1e59e555d0112decd5fe598437fdd3"
+  integrity sha512-lNdXabUmyxXnysXadTKyiKK9ik5L8b9SXu/QshgvE271QObPtp2Ubmh+rLNNCEAO65DE2VAxcesWmRKYfaQSJg==
 
 "@hediet/std@^0.6.0":
   version "0.6.0"

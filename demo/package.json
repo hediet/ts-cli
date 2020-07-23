@@ -7,6 +7,9 @@
 	"scripts": {
 		"dev": "tsc --watch"
 	},
+	"bin": {
+		"demo": "./entry.js"
+	},
 	"dependencies": {
 		"@hediet/std": "^0.6.0"
 	},

@@ -3,7 +3,7 @@ import {
 	sNumber,
 	sLiteral,
 	sString,
-	sArray,
+	sArrayOf,
 	BaseSerializer,
 	sUnion,
 } from "@hediet/semantic-json";
@@ -20,7 +20,7 @@ export type NamedParamType<T> = TypeWithDefaultValueHelper<
 
 type TypeWithDefaultValueHelper<T, TType extends ParamType<T>> =
 	| TType
-	| TypeWithDefaultValue<T, TType>;
+	| TypeWithDefaultValue<T, T, TType>;
 
 export interface ArgParseError {
 	kind: "ArgParseError";
@@ -36,8 +36,8 @@ export abstract class ParamType<T> {
 
 	public withDefaultValue<TDefault>(
 		defaultValue: TDefault
-	): TypeWithDefaultValue<T | TDefault, this> {
-		return new TypeWithDefaultValue<T | TDefault, this>(this, defaultValue);
+	): TypeWithDefaultValue<T, TDefault, this> {
+		return new TypeWithDefaultValue<T, TDefault, this>(this, defaultValue);
 	}
 
 	abstract parseStrings(values: string[]): ParseResult<T>;
@@ -48,21 +48,24 @@ export abstract class ParamType<T> {
 		return this;
 	}
 
-	public abstract get serializer(): Serializer<T, any>;
+	public abstract get serializer(): Serializer<T>;
 
 	public itemToString(): string {
 		return this.toString();
 	}
 }
 
-export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
+export class TypeWithDefaultValue<T, TDefault, TType extends ParamType<T>> {
 	public readonly kind = "TypeWithDefaultValue";
 
-	public get T(): T {
+	public get T(): T | TDefault {
 		throw new Error();
 	}
 
-	constructor(public readonly type: TType, public readonly defaultValue: T) {}
+	constructor(
+		public readonly type: TType,
+		public readonly defaultValue: TDefault
+	) {}
 
 	public getRealType(): TType {
 		return this.type;
@@ -76,8 +79,8 @@ export class TypeWithDefaultValue<T, TType extends ParamType<T>> {
 		return this.type.itemToString();
 	}
 
-	public get serializer(): Serializer<T, any> {
-		return this.type.serializer;
+	public get serializer(): Serializer<T | TDefault> {
+		return this.type.serializer as any;
 	}
 }
 
@@ -117,25 +120,25 @@ export class TrueParamType extends NoValueParamType<true> {
 		return "true";
 	}
 
-	public get serializer(): Serializer<true, any> {
+	public get serializer(): Serializer<true> {
 		return sLiteral(true);
 	}
 }
 
 export class StringSerializerParamType<T> extends SingleValueParamType<T> {
 	constructor(
-		public readonly serializer: BaseSerializer<T, string>,
+		public readonly serializer: Serializer<T>,
 		private readonly name: string
 	) {
 		super();
 	}
 
 	public parse(value: string): ParseResult<T> {
-		const r = this.serializer.deserializeTyped(value);
-		if (r.isOk) {
+		const r = this.serializer.deserialize(value);
+		if (!r.hasErrors) {
 			return { result: r.value };
 		} else {
-			const message = r.errors.map(e => e.message).join("\n");
+			const message = r.errors.map((e) => e.message).join("\n");
 			return { error: { kind: "ArgParseError", message } };
 		}
 	}
@@ -147,7 +150,7 @@ export class StringSerializerParamType<T> extends SingleValueParamType<T> {
 
 export class NumberSerializerParamType<T> extends SingleValueParamType<T> {
 	constructor(
-		public readonly serializer: BaseSerializer<T, number>,
+		public readonly serializer: Serializer<T>,
 		private readonly name: string
 	) {
 		super();
@@ -164,11 +167,11 @@ export class NumberSerializerParamType<T> extends SingleValueParamType<T> {
 			};
 		}
 
-		const r = this.serializer.deserializeTyped(numberVal);
-		if (r.isOk) {
+		const r = this.serializer.deserialize(numberVal);
+		if (!r.hasErrors) {
 			return { result: r.value };
 		} else {
-			const message = r.errors.map(e => e.message).join("\n");
+			const message = r.errors.map((e) => e.message).join("\n");
 			return { error: { kind: "ArgParseError", message } };
 		}
 	}
@@ -182,7 +185,7 @@ export class ChoiceParamType<
 	T extends string
 > extends StringSerializerParamType<T> {
 	constructor(public readonly choices: T[]) {
-		super(sUnion(...choices.map(c => sLiteral(c))), choices.join("|"));
+		super(sUnion(choices.map((c) => sLiteral(c))), choices.join("|"));
 	}
 }
 
@@ -212,16 +215,16 @@ export class ArrayType<TItem> extends MultiValueParamType<TItem[]> {
 		return this.itemType.toString();
 	}
 
-	public get serializer(): Serializer<TItem[], any> {
-		return sArray(this.itemType.serializer);
+	public get serializer(): Serializer<TItem[]> {
+		return sArrayOf(this.itemType.serializer);
 	}
 }
 
 export const types = {
 	booleanFlag: new TrueParamType().withDefaultValue(false),
-	int: new NumberSerializerParamType(sNumber, "int"),
-	number: new NumberSerializerParamType(sNumber, "number"),
-	string: new StringSerializerParamType(sString, "string"),
+	int: new NumberSerializerParamType(sNumber(), "int"),
+	number: new NumberSerializerParamType(sNumber(), "number"),
+	string: new StringSerializerParamType(sString(), "string"),
 	choice: <T extends string>(...choices: T[]) => new ChoiceParamType(choices),
 	arrayOf: <T>(itemType: SingleValueParamType<T>) =>
 		new ArrayType<T>(itemType),

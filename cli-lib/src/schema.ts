@@ -1,55 +1,50 @@
 import { Cli } from "./cli";
 import {
 	sTypePackage,
-	TypePackageDef,
-	NamespacedName,
-	TypeSystem,
 	sObject,
-	field,
+	sObjectProp,
 	sString,
-	namespace,
-	sArray,
+	sArrayOf,
 } from "@hediet/semantic-json";
-import { deserializationValue } from "@hediet/semantic-json";
+import {
+	NamespacedName,
+	namespace,
+} from "@hediet/semantic-json/dist/src/NamespacedNamed";
+import { SerializerSystem } from "@hediet/semantic-json/dist/src/serialization/SerializerSystem";
 
 export interface CliSchema {
 	mainType: NamespacedName;
 	defaultType?: NamespacedName;
-	typePackages: TypePackageDef[];
+	typePackages: any[]; // TODO SerializerPackageDef[];
 }
 
 export const cliNs = namespace("hediet.de/cli");
 
 const sNamespacedName = sObject({
-	properties: {
-		namespace: sString,
-		name: sString,
-	},
+	namespace: sString(),
+	name: sString(),
 }).refine<NamespacedName>({
 	canSerialize: (ns): ns is NamespacedName => ns instanceof NamespacedName,
-	deserialize: ns =>
-		deserializationValue(new NamespacedName(ns.namespace, ns.name)),
-	serialize: ns => ({
+	fromIntermediate: (ns) => new NamespacedName(ns.namespace, ns.name),
+	toIntermediate: (ns) => ({
 		namespace: ns.namespace,
 		name: ns.name,
 	}),
 });
 
 export const sSchema = sObject({
-	properties: {
-		mainType: sNamespacedName,
-		defaultType: field({ serializer: sNamespacedName, optional: true }),
-		typePackages: sArray(sTypePackage),
-	},
+	mainType: sNamespacedName,
+	defaultType: sObjectProp({ serializer: sNamespacedName, optional: true }),
+	typePackages: sArrayOf(sTypePackage),
 });
 
 export function cliToSchema(cli: Cli<any>): CliSchema {
-	const ts = new TypeSystem();
+	const ts = new SerializerSystem() as any;
 
 	const serializer = cli.getSerializer();
 
 	const tp = serializer.getType(ts);
-	const typePackages = ts.definedPackages();
+	const typePackages = ts.getDefinedPackages();
 	return {
 		mainType: tp.namespacedName,
 		typePackages,

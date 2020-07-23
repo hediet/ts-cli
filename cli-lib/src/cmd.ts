@@ -11,11 +11,11 @@ import { mapObject, fromEntries } from "./utils";
 import {
 	sObject,
 	sLiteral,
-	field,
+	sObjectProp,
 	NamedSerializer,
+	DeserializeResult,
 } from "@hediet/semantic-json";
 import { InstantiatedCmd, cliNs } from "./schema";
-import { deserializationValue } from "@hediet/semantic-json/dist/src/result";
 
 export interface PositionalCmdParam<
 	TName extends string = string,
@@ -74,7 +74,7 @@ export class Cmd<TCmdData> {
 			return item;
 		}
 
-		const namedArgs = mapObject(this.namedParams, val =>
+		const namedArgs = mapObject(this.namedParams, (val) =>
 			expectType<NamedParam>({
 				kind:
 					val.type.kind === "TypeWithDefaultValue"
@@ -141,7 +141,7 @@ export class Cmd<TCmdData> {
 					value = realType.parse(arg.value);
 				}
 			} else if (realType.kind === "MultiValue") {
-				value = realType.parse(positionalArgs.map(a => a.value));
+				value = realType.parse(positionalArgs.map((a) => a.value));
 			} else {
 				const n: never = realType;
 				throw new Error();
@@ -163,50 +163,45 @@ export class Cmd<TCmdData> {
 		return { parsedArgs, errors, dataFactory };
 	}
 
-	public getSerializer(): NamedSerializer<InstantiatedCmd<TCmdData>, any> {
+	public getSerializer(): NamedSerializer<InstantiatedCmd<TCmdData>> {
 		return sObject({
-			properties: {
-				cmd: sLiteral(this.name || "main"),
-				...fromEntries(
-					this.positionalParams.map(arg => [
+			cmd: sLiteral(this.name || "main"),
+			...fromEntries(
+				this.positionalParams.map((arg) => [
+					arg.name,
+					sObjectProp({
+						serializer: arg.type.serializer,
+						optional: false,
+						description: arg.description,
+					}),
+				])
+			),
+			...fromEntries(
+				Object.entries(this.namedParams)
+					.filter(([_, arg]) => !arg.excludeFromSchema)
+					.map(([name, arg]) => [
 						arg.name,
-						field({
+						sObjectProp({
 							serializer: arg.type.serializer,
-							optional: false,
+							optional: arg.isOptional,
 							description: arg.description,
 						}),
 					])
-				),
-				...fromEntries(
-					Object.entries(this.namedParams)
-						.filter(([_, arg]) => !arg.excludeFromSchema)
-						.map(([name, arg]) => [
-							arg.name,
-							field({
-								serializer: arg.type.serializer,
-								optional: arg.isOptional,
-								description: arg.description,
-							}),
-						])
-				),
-			},
+			),
 		})
 			.refine<InstantiatedCmd<TCmdData>>({
-				canSerialize: (i): i is InstantiatedCmd<TCmdData> =>
-					i instanceof InstantiatedCmd,
-				deserialize: i => {
+				class: InstantiatedCmd,
+				fromIntermediate: (i) => {
 					delete i.cmd;
 					const dataBuilder = this.dataBuilder;
 					if (!dataBuilder) {
 						throw new Error("No data builder set.");
 					}
-					return deserializationValue(
-						new InstantiatedCmd<TCmdData>(() =>
-							dataBuilder(i as any)
-						)
+					return new InstantiatedCmd<TCmdData>(() =>
+						dataBuilder(i as any)
 					);
 				},
-				serialize: i => {
+				toIntermediate: (i) => {
 					throw new Error("Not supported!");
 				},
 			})

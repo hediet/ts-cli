@@ -8,11 +8,7 @@ import {
 } from "@hediet/cli";
 import { join } from "path";
 
-interface CmdData {
-	run(): Promise<void>;
-}
-
-const cli = createDefaultCli<CmdData>()
+const cli = createDefaultCli()
 	.addCmd({
 		name: "print",
 		description: "Prints selected files.",
@@ -30,18 +26,16 @@ const cli = createDefaultCli<CmdData>()
 				description: "The count",
 			}),
 		},
-		getData: args => ({
-			async run() {
-				console.log("print:", args);
-				for (const f of args.files) {
-					if (args.onlyFileNames) {
-						console.log(f);
-					} else {
-						console.log(f + " content");
-					}
+		getData: (args) => async () => {
+			console.log("print:", args);
+			for (const f of args.files) {
+				if (args.onlyFileNames) {
+					console.log(f);
+				} else {
+					console.log(f + " content");
 				}
-			},
-		}),
+			}
+		},
 	})
 	.addCmd({
 		name: "echo",
@@ -63,15 +57,13 @@ const cli = createDefaultCli<CmdData>()
 			}),
 			positionalParam("mode", types.choice("default", "special", "fast")),
 		],
-		getData: args => ({
-			async run() {
-				console.log("echo:", args.input, `(${args.mode})`);
-			},
-		}),
+		getData: (args) => async () => {
+			console.log("echo:", args.input, `(${args.mode})`);
+		},
 	});
 
 runDefaultCli({
 	info: cliInfoFromPackageJson(join(__dirname, "../package.json")),
 	cli,
-	dataHandler: data => data.run(),
+	dataHandler: (data) => data(),
 });
