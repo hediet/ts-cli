@@ -168,13 +168,13 @@ whereas `@hediet/cli` is only meant for NodeJs.
 
 Primary goal of this library is to process the command line arguments passed to the current process.
 
-The user writes the command line arguments as a single string in a shell of his choice:
+The user writes the command line arguments as a single string in a shell of their choice:
 
 ```sh
 foo bar --baz qux quux /x=y
 ```
 
-This string is splitted by his shell and then passed as an array of strings to the launched process (`foo`):
+This string is splitted by the shell and then passed as an array of strings to the launched process (`foo`):
 
 ```json
 ["bar", "--baz", "qux", "quux", "/x=y"]
