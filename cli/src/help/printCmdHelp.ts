@@ -2,6 +2,7 @@ import { Cmd, NamedCmdParam, NamedParamType } from "@hediet/cli-lib";
 
 export interface HelpInfo {
 	appName: string;
+	commandName?: string;
 }
 
 export function getUsage(cmd: Cmd<any>): string {
@@ -24,7 +25,7 @@ export function getUsage(cmd: Cmd<any>): string {
 }
 
 export function printCmdHelp(info: HelpInfo, cmd: Cmd<any>): void {
-	console.log(`usage: ${info.appName} ${getUsage(cmd)}`);
+	console.log(`usage: ${info.commandName || info.appName} ${getUsage(cmd)}`);
 	console.log("");
 	console.log(`      ${cmd.description}`);
 	console.log("");

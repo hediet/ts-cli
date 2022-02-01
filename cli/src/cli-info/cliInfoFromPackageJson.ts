@@ -10,9 +10,11 @@ export function cliInfoFromPackageJson(
 	const pkgJson = require(absolutePathToPackageJson) as {
 		name: string;
 		version: string;
+		bin?: Record<string, string>;
 	};
 	return {
 		appName: pkgJson.name,
+		commandName: pkgJson.bin ? Object.keys(pkgJson.bin)[0] : undefined,
 		version: pkgJson.version || "0.0.1",
 	};
 }

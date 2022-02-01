@@ -8,7 +8,7 @@ export function printCliHelp(
 	hasMainCommand?: boolean
 ): void {
 	if (!hasMainCommand) {
-		console.log(`usage: ${info.appName} {command} {...args}`);
+		console.log(`usage: ${info.commandName || info.appName} {command} {...args}`);
 		console.log(`version: ${info.version}`);
 		console.log("");
 	}
@@ -26,7 +26,7 @@ export function printCliHelp(
 		}
 
 		console.log(
-			`  ${info.appName} ${getUsage(cmd)}  ${cmd.description || ""}`
+			`  ${info.commandName || info.appName} ${getUsage(cmd)}  ${cmd.description || ""}`
 		);
 	}
 
