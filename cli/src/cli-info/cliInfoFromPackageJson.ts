@@ -12,9 +12,11 @@ export function cliInfoFromPackageJson(
 		version: string;
 		bin?: Record<string, string>;
 	};
+	const firstBinEntryKey = pkgJson.bin
+		? Object.keys(pkgJson.bin)[0]
+		: undefined;
 	return {
-		appName: pkgJson.name,
-		commandName: pkgJson.bin ? Object.keys(pkgJson.bin)[0] : undefined,
+		appName: firstBinEntryKey || pkgJson.name,
 		version: pkgJson.version || "0.0.1",
 	};
 }

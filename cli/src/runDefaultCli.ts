@@ -52,7 +52,6 @@ export function runDefaultCli<TCmdData>(
 		if (result.selectedCmd) {
 			printCmdHelp(
 				{
-					commandName: options.info.commandName,
 					appName: options.info.appName,
 				},
 				result.selectedCmd

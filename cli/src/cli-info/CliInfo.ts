@@ -3,6 +3,5 @@
  */
 export interface CliInfo {
 	appName: string;
-	commandName?: string;
 	version: string;
 }
